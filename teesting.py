@@ -142,8 +142,8 @@ def create_record_object(record:str) -> dict:
 
 
 source=r'C:\Users\Admin\Desktop'
-# files=[r'Log analysis\data\operation logs\2023\01\TM_PAP_2023-01.log',r'Log analysis\data\operation logs\2023\01\VP_PAP_2023-01.log']
-files=[r'Log analysis\data\operation logs\2023\01\TM_PAP_2023-01.log']
+# files=[r'log_analysis\data\operation logs\2023\01\TM_PAP_2023-01.log',r'log_analysis\data\operation logs\2023\01\VP_PAP_2023-01.log']
+files=[r'log_analysis\data\operation logs\2023\01\TM_PAP_2023-01.log']
 paths=[path.join(source, file) for file in files]
 
 
@@ -166,7 +166,7 @@ def main():
     # print('first record board : {}'.format(records_collection[0].build().getBoard()))
     print('number of records: {record_len}'.format(record_len=len(records_collection)))
     print('warnings: {}'.format(warnings))
-    return 0
+    return 0    
 
 
 
