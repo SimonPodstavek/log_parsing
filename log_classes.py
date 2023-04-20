@@ -51,3 +51,18 @@ class RecordBuilder :
         return self
     def build(self):
         return self.record
+    
+    def to_dict(self):
+        return {
+            "HDV": self.record.HDV,
+            "PAP_date": self.record.PAP_date,
+            "PAP_time": self.record.PAP_time,
+            "Actor": self.record.Actor,
+            "Board": self.record.Board,
+            "Software": self.record.Software,
+            "Checksum_Flash": self.record.Checksum_Flash,
+            "Checksum_EEPROM": self.record.Checksum_EEPROM,
+            "Compilation_date": self.record.Compilation_date,
+            "Contents": self.record.Contents
+
+        }
