@@ -166,8 +166,13 @@ def main():
     end_time = time.perf_counter()
 
     print('time taken: {time_taken}'.format(time_taken=end_time-start_time))
-    # print('first record board : {}'.format(records_collection[0].build().getBoard()))
     print('number of records: {record_len}'.format(record_len=len(records_collection)))
+    collection=create_session().record
+    # collection.insert_one({'test':14})
+    ma=records_collection[0].to_dict()
+    print(ma)
+    collection.insert_one(ma)
+    # collection.insert_many(records_collection)
     print('warnings: {}'.format(warnings))
     return 0    
 
