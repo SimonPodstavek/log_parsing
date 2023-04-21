@@ -200,15 +200,3 @@ if __name__ == '__main__':
 # # Vcislo
 # Výrobné číslo                   - V00000000
 
-
-# #Programovanie safebytes
-
-# Programmovanie safe bytes       - 0x0001: 4C BF 00 00 00 11 01 23 11 01 00 00 02 54 4E 01 - OK
-
-# # HDV
-# Číslo HDV                       - 998040 - nezapísané do SafeBytes
-
-
-# #Verzia
-
-# Verzia SW                       - TY_1
