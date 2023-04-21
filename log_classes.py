@@ -1,3 +1,4 @@
+from datetime import datetime
 class Record:
     def __init__(self) -> None:
         self.HDV = None
@@ -55,8 +56,8 @@ class RecordBuilder :
     def to_dict(self):
         return {
             "HDV": self.record.HDV,
-            "PAP_date": self.record.PAP_date,
-            "PAP_time": self.record.PAP_time,
+            "PAP_date": datetime.strftime(self.record.PAP_date,"%Y.%m.%d"),
+            "PAP_time": datetime.strftime(self.record.PAP_time,"%Y.%m.%d"),
             "Actor": self.record.Actor,
             "Board": self.record.Board,
             "Software": self.record.Software,

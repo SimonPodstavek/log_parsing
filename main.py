@@ -98,7 +98,7 @@ def create_record_object(record:str) -> dict:
     #Get first line and split it by ; and assign it to Record instance
     Programmed_time_and_date = record.split(';')[0].split()
     records_collection[record_id].setPAP_date(datetime.strptime(Programmed_time_and_date[0], '%Y.%m.%d'))
-    records_collection[record_id].setPAP_time(datetime.strptime(Programmed_time_and_date[1], '%H:%M:%S').time())
+    records_collection[record_id].setPAP_time(datetime.strptime(Programmed_time_and_date[1], '%H:%M:%S'))
 
     #DO NOT APPLY TO VERSION 2.0 and aboove
     #Delete 0x from the beginning of the string on positions 4-6 and reverse the string to get HDV. Assign HDV to Record instance
@@ -143,7 +143,7 @@ def create_record_object(record:str) -> dict:
 
 
 
-source=r'C:\Users\Admin\Desktop'
+source=r'C:\Users\Simon\Desktop'
 # files=[r'log_analysis\data\operation logs\2023\01\TM_PAP_2023-01.log',r'log_analysis\data\operation logs\2023\01\TU_PAP_2023-01.log']
 files=[r'log_analysis\data\operation logs\2023\01\TM_PAP_2023-01.log']
 # files=[r'log_analysis\data\operation logs\2023\01\TU_PAP_2023-01.log']
@@ -165,13 +165,21 @@ def main():
         
     end_time = time.perf_counter()
 
-    print('time taken: {time_taken}'.format(time_taken=end_time-start_time))
+    print('parsing time: {}'.format(end_time-start_time))
     print('number of records: {record_len}'.format(record_len=len(records_collection)))
+
+
+    start_time=time.perf_counter()
+    ma=[_.to_dict() for _ in records_collection]
+    end_time=time.perf_counter()
+    print('obj -> dict time: {}'.format(end_time-start_time))
+
+
+    start_time=time.perf_counter()
     collection=create_session().record
-    # collection.insert_one({'test':14})
-    ma=records_collection[0].to_dict()
-    print(ma)
-    collection.insert_one(ma)
+    collection.insert_many(ma)
+    end_time=time.perf_counter()
+    print('session and upload tim: {}'.format(end_time-start_time))
     # collection.insert_many(records_collection)
     print('warnings: {}'.format(warnings))
     return 0    
