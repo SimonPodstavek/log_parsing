@@ -1,6 +1,6 @@
 import re
 from log_classes import *
-from datetime import datetime
+from datetime import datetime,date
 import time
 from os import path, access, R_OK
 from database.session import *
@@ -74,6 +74,8 @@ def create_record_object(record:str) -> dict:
     if version is None:
         return 0
 
+    #remove version from the record
+    record = re.sub(regex_expressions['software_version'], '', record)
     if re.search(regex_expressions['accepted_version'], version.group(1)) is None:
         return 0
 
@@ -96,9 +98,8 @@ def create_record_object(record:str) -> dict:
 
 
     #Get first line and split it by ; and assign it to Record instance
-    Programmed_time_and_date = record.split(';')[0].split()
-    records_collection[record_id].setPAP_date(datetime.strptime(Programmed_time_and_date[0], '%Y.%m.%d'))
-    records_collection[record_id].setPAP_time(datetime.strptime(Programmed_time_and_date[1], '%H:%M:%S'))
+    programmed_time_and_date = record.split(';')
+    records_collection[record_id].setPAP_date(datetime.strptime(programmed_time_and_date[0], '%Y.%m.%d %H:%M:%S'))
 
     #DO NOT APPLY TO VERSION 2.0 and aboove
     #Delete 0x from the beginning of the string on positions 4-6 and reverse the string to get HDV. Assign HDV to Record instance
@@ -142,11 +143,11 @@ def create_record_object(record:str) -> dict:
 
 
 
-
-source=r'C:\Users\Simon\Desktop'
-# files=[r'log_analysis\data\operation logs\2023\01\TM_PAP_2023-01.log',r'log_analysis\data\operation logs\2023\01\TU_PAP_2023-01.log']
-files=[r'log_analysis\data\operation logs\2023\01\TM_PAP_2023-01.log']
-# files=[r'log_analysis\data\operation logs\2023\01\TU_PAP_2023-01.log']
+#go two levels up to get to the root directory
+source = path.abspath(path.join(path.dirname(__file__), '..'))
+# files=[r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log']
+# files=[r'data\operation logs\2023\01\TM_PAP_2023-01.log']
+files=[r'data\operation logs\2023\01\TU_PAP_2023-01.log']
 paths=[path.join(source, file) for file in files]
 
 

@@ -7,5 +7,3 @@ def create_session():
     client = MongoClient(cluster)
     db = client.implementation_log
     return db
-
-# test change

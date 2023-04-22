@@ -26,9 +26,6 @@ class RecordBuilder :
     def setPAP_date(self,PAP_date):
         self.record.PAP_date = PAP_date
         return self
-    def setPAP_time(self,PAP_time):
-        self.record.PAP_time = PAP_time
-        return self
     def setActor(self,actor):
         self.record.Actor = actor
         return self
@@ -56,8 +53,7 @@ class RecordBuilder :
     def to_dict(self):
         return {
             "HDV": self.record.HDV,
-            "PAP_date": datetime.strftime(self.record.PAP_date,"%Y.%m.%d"),
-            "PAP_time": datetime.strftime(self.record.PAP_time,"%Y.%m.%d"),
+            "PAP_date": self.record.PAP_date,
             "Actor": self.record.Actor,
             "Board": self.record.Board,
             "Software": self.record.Software,
