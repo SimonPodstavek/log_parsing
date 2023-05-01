@@ -181,7 +181,7 @@ def create_record_object(record:str, path:str) -> None or list:
         records_obj_collection[record_id].setSoftware(response)
     elif re.search(regex_expressions['SW_version_3G'], version_row) is not None:
         print(1)
-        pass
+        return 
     else:
         version=error_handler(record_id, 106,"Zadaná verzia nespĺňa kritéria pre SW ver. 2G ani 3G",True,version_row, regex_expressions['any_software_version'])
         if version == None:
@@ -199,7 +199,6 @@ def create_record_object(record:str, path:str) -> None or list:
 
     if safebytes[12] != "01" :
         pass
-        # return
 
 
 
@@ -293,12 +292,13 @@ def main():
 
 
 def upload_records():
-    print(52)
+    
+    #check if there are any records to upload
     if len(satisfying_records) == 0: 
         print('Chyba 107: Žiaden zo záznamov sa nepodarilo spracovať, nič sa nanahrá.')
         exit()     
         
-        
+    #output stats    
     end_time = time.perf_counter()
     print("-------------------------")
     print("čas spracovania: {}\n".format(end_time-parsing_start_time))
@@ -306,24 +306,31 @@ def upload_records():
     print("Nespracované záznamy: {} \n".format(number_of_records-len(satisfying_records)))
 
 
-
+    #create DB session
     cursor, conn = create_session()
 
+    #fetch data from DB
     try:
         cursor.execute("SELECT * FROM \"Path\"")
         paths=cursor.fetchall()
+        paths=[_[0] for _ in paths]
 
-        cursor.execute("SELECT * FROM \"Actor\"")
+        cursor.execute("SELECT \"Actor_key\" FROM \"Actor\"")
         actors=cursor.fetchall()
+        actors=[_[0] for _ in actors]
 
-        cursor.execute("SELECT * FROM \"Board\"")
+        cursor.execute("SELECT \"Board_version\" FROM \"Board\"")
         boards=cursor.fetchall()
+        boards=[_[0] for _ in boards]
 
         cursor.execute("SELECT * FROM \"HDV\"")
         HDV=cursor.fetchall()
+        HDV=[_[0] for _ in HDV]
 
         cursor.execute("SELECT * FROM \"Software\"")
         software=cursor.fetchall()
+        software=[_[0] for _ in software]
+
     except:
         print('Chyba 110: Nastala chyba pri sťahovaní dát. Skontrolujte pripojenie k databáze.')
         cursor.close()
@@ -338,12 +345,41 @@ def upload_records():
     end_time=time.perf_counter()
     print('obj -> dict time: {} \n'.format(end_time-start_time))
 
+    for record in records_dictionary:
+        if record["Path"] in paths:
+            print("Duplicitný záznam")
+            exit()
 
-    start_time=time.perf_counter()
-    collection=create_session().record
-    collection.insert_many(records_dictionary)
-    end_time=time.perf_counter()
-    print("Vytvorenie relácie a upload: {}\n".format(end_time-start_time))
+        if record["Actor"] not in actors:
+            cursor.execute("INSERT INTO \"Actor\" (\"id\", \"Actor_key\") VALUES({id}, {actor_key})".format(id = len(actors)+1, actor_key = record["Actor"]))
+            actors.append(record["Actor"])
+
+        if record["Board"] not in boards:
+            cursor.execute("INSERT INTO \"Board\"(\"id\", \"Board_version\") VALUES({id}, {board_version})".format(id = len(boards)+1, board_version = record["Board"]))
+            boards.append(record["Board"])
+
+        if record["Board"] not in boards:
+            cursor.execute("INSERT INTO \"Board\" VALUES({id}, {board_version})".format(id = len(boards)+1, board_version = record["Board"]))
+            boards.append(record["Board"])
+    
+    
+    conn.commit()
+
+
+
+    
+    cursor.close()
+    conn.close()
+
+        
+
+
+
+    # start_time=time.perf_counter()
+    # collection=create_session().record
+    # collection.insert_many(records_dictionary)
+    # end_time=time.perf_counter()
+    # print("Vytvorenie relácie a upload: {}\n".format(end_time-start_time))
     exit()    
 
 

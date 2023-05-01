@@ -71,6 +71,6 @@ class RecordBuilder :
             "Checksum_Flash": self.record.Checksum_Flash,
             "Checksum_EEPROM": self.record.Checksum_EEPROM,
             "Compilation_date": self.record.Compilation_date,
-            "Path": self.record.Path
+            "Path": self.record.path
 
         }
