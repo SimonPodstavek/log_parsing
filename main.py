@@ -9,7 +9,7 @@ from msvcrt import getch
 
 
 
-records_collection=[]
+records_obj_collection=[]
 satisfying_records=[]
 
 regex_expressions = {
@@ -64,7 +64,7 @@ def collect_records_from_files(list_of_files:dict)->tuple:
         records_list=log_content[_].split('-'*80)
         records_list=[re.sub(regex_expressions['double_new_line_remove'], '\n', x).strip() for x in records_list]
         records_list=list(filter(bool,records_list))
-        mkay.extend(records_list)
+        mkay.append(File(records_list, file))
     return mkay, files_with_warnings
 
 
@@ -155,11 +155,11 @@ def extract_2G_parameters(record_id:int,version_row:str) -> tuple:
 
 
 
-def create_record_object(record:str) -> None or list:
+def create_record_object(record:str, path:str) -> None or list:
 
     #Create new empty instance of record class
-    records_collection.append(RecordBuilder())
-    record_id=len(records_collection)-1
+    records_obj_collection.append(RecordBuilder())
+    record_id=len(records_obj_collection)-1
 
     #check if version is compatible with the script
     version_row = re.search(regex_expressions['software_version'], record)
@@ -170,7 +170,7 @@ def create_record_object(record:str) -> None or list:
         version=error_handler(record_id, 105,"V zadanom zázname neexistuje verzia",True, "N/A",regex_expressions['any_software_version'])
         if version == None:
             return
-        records_collection[record_id].setSoftware(response)
+        records_obj_collection[record_id].setSoftware(response)
 
 
 
@@ -178,7 +178,7 @@ def create_record_object(record:str) -> None or list:
         response=extract_2G_parameters(record_id,version_row)
         if response == None:
             return
-        records_collection[record_id].setSoftware(response)
+        records_obj_collection[record_id].setSoftware(response)
     elif re.search(regex_expressions['SW_version_3G'], version_row) is not None:
         print(1)
         pass
@@ -186,7 +186,7 @@ def create_record_object(record:str) -> None or list:
         version=error_handler(record_id, 106,"Zadaná verzia nespĺňa kritéria pre SW ver. 2G ani 3G",True,version_row, regex_expressions['any_software_version'])
         if version == None:
             return
-        records_collection[record_id].setSoftware(response)
+        records_obj_collection[record_id].setSoftware(response)
     
 
     safebytes=[]
@@ -205,7 +205,7 @@ def create_record_object(record:str) -> None or list:
 
     #Get first line and split it by ; and assign it to Record instance
     programmed_time_and_date = record.split(';')
-    records_collection[record_id].setPAP_date(datetime.strptime(programmed_time_and_date[0], '%Y.%m.%d %H:%M:%S'))
+    records_obj_collection[record_id].setPAP_date(datetime.strptime(programmed_time_and_date[0], '%Y.%m.%d %H:%M:%S'))
 
     #DO NOT APPLY TO VERSION 2.0 and aboove
     #Delete 0x from the beginning of the string on positions 4-6 and reverse the string to get HDV. Assign HDV to Record instance
@@ -214,7 +214,7 @@ def create_record_object(record:str) -> None or list:
 
     actor_id=([x for x in safebytes[9:7:-1]] )
     actor_id.insert(0,'0x')
-    records_collection[record_id].setActor(int(''.join(actor_id),16))
+    records_obj_collection[record_id].setActor(int(''.join(actor_id),16))
 
 
 
@@ -224,16 +224,16 @@ def create_record_object(record:str) -> None or list:
     required_length=8
     number_of_zeros=required_length-len(str(board_id))
     board_id=''.join(['V','0'*number_of_zeros,str(board_id)])
-    records_collection[record_id].setBoard(board_id)
+    records_obj_collection[record_id].setBoard(board_id)
 
 
-    records_collection[record_id].setSoftware(version_row)
+    records_obj_collection[record_id].setSoftware(version_row)
 
     chsumFlash=''.join(['0x',safebytes[0]])
-    records_collection[record_id].setChecksum_Flash(chsumFlash)
+    records_obj_collection[record_id].setChecksum_Flash(chsumFlash)
     
     chsumEEPROM=''.join(['0x',safebytes[1]])
-    records_collection[record_id].setChecksum_EEPROM(chsumEEPROM)
+    records_obj_collection[record_id].setChecksum_EEPROM(chsumEEPROM)
 
 
     query=re.search(regex_expressions['hex_date'], record)
@@ -241,7 +241,9 @@ def create_record_object(record:str) -> None or list:
         return 0
 
     compiled_date=datetime.strptime(query.group(1), '%Y.%m.%d.')
-    records_collection[record_id].setCompilation_date(compiled_date)
+    records_obj_collection[record_id].setCompilation_date(compiled_date)
+
+    records_obj_collection[record_id].setPath(path)
 
     satisfying_records.append(record_id)
 
@@ -251,10 +253,12 @@ def create_record_object(record:str) -> None or list:
 #go two levels up to get to the root directory
 source = path.abspath(path.join(path.dirname(__file__), '..'))
 # files=[r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log']
-# files=[r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log']
-files=[r'data\operation logs\2023\01\TM_PAP_2023-01.log']
+files=[r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log']
+# files=[r'data\operation logs\2023\01\TM_PAP_2023-01.log']
 # files=[r'data\operation logs\2023\01\TU_PAP_2023-01.log']
 paths=[path.join(source, file) for file in files]
+
+
 
 
 
@@ -263,14 +267,21 @@ paths=[path.join(source, file) for file in files]
 parsing_start_time = time.perf_counter()
 def main():
 
+
     global records 
-    records = collect_records_from_files(paths)[0]
-    print(len(records))
+    global number_of_records
+    files = collect_records_from_files(paths)[0]
+    number_of_records = sum(file.getLength() for file in files)
+    print(number_of_records)
+    records = [file.getRecords() for file in files]
+    # print(len(records))
     if records == 102:
         print('Chyba 102: V zadanom adresári sa nenachádzajú žiadne podporované súbory')
         return 0
-    for record in records:
-        create_record_object(record)
+    for i,recordList in enumerate(records):
+        path = files[i].getPath()
+        for record in recordList:
+            create_record_object(record,path)
 
     upload_records()
 
@@ -279,28 +290,58 @@ def main():
 
 
 
+
+
 def upload_records():
+    print(52)
     if len(satisfying_records) == 0: 
-        print('Chyba 107: Žiaden zo záznamov sa nepodarilo spracovať, teda sa nič sa nanahrá.')
-        exit() 
+        print('Chyba 107: Žiaden zo záznamov sa nepodarilo spracovať, nič sa nanahrá.')
+        exit()     
         
         
     end_time = time.perf_counter()
-
     print("-------------------------")
     print("čas spracovania: {}\n".format(end_time-parsing_start_time))
-    print('Spracované záznamy: {satisfying_records} / {records}\n'.format(satisfying_records=len(satisfying_records),records=len(records) ))
-    print("Nespracované záznamy: {unprocessed} \n".format(unprocessed=len(records)-len(satisfying_records)))
+    print("Spracované záznamy: {} / {} \n".format(len(satisfying_records) ,number_of_records))
+    print("Nespracované záznamy: {} \n".format(number_of_records-len(satisfying_records)))
+
+
+
+    cursor, conn = create_session()
+
+    try:
+        cursor.execute("SELECT * FROM \"Path\"")
+        paths=cursor.fetchall()
+
+        cursor.execute("SELECT * FROM \"Actor\"")
+        actors=cursor.fetchall()
+
+        cursor.execute("SELECT * FROM \"Board\"")
+        boards=cursor.fetchall()
+
+        cursor.execute("SELECT * FROM \"HDV\"")
+        HDV=cursor.fetchall()
+
+        cursor.execute("SELECT * FROM \"Software\"")
+        software=cursor.fetchall()
+    except:
+        print('Chyba 110: Nastala chyba pri sťahovaní dát. Skontrolujte pripojenie k databáze.')
+        cursor.close()
+        conn.close()
+        exit()  
+
+
+
 
     start_time=time.perf_counter()
-    ma=[records_collection[_].to_dict() for _ in satisfying_records]
+    records_dictionary=[records_obj_collection[_].to_dict() for _ in satisfying_records]
     end_time=time.perf_counter()
     print('obj -> dict time: {} \n'.format(end_time-start_time))
 
 
     start_time=time.perf_counter()
     collection=create_session().record
-    collection.insert_many(ma)
+    collection.insert_many(records_dictionary)
     end_time=time.perf_counter()
     print("Vytvorenie relácie a upload: {}\n".format(end_time-start_time))
     exit()    

@@ -1,4 +1,19 @@
 from datetime import datetime
+
+class File:
+    def __init__(self,records,path) -> None:
+        self.records = records
+        self.path = path
+
+    def getRecords(self):
+        return self.records
+    def getPath(self):
+        return self.path
+    def getLength(self):
+        return len(self.records)
+
+
+
 class Record:
     def __init__(self) -> None:
         self.HDV = None
@@ -10,10 +25,7 @@ class Record:
         self.Checksum_Flash = None
         self.Checksum_EEPROM = None
         self.Compilation_date = None
-
-    def getBoard(self):
-        return self.Board
-
+        self.path = None
 
 class RecordBuilder :
     #Create new empty instance of record class
@@ -43,6 +55,9 @@ class RecordBuilder :
     def setCompilation_date(self,compilation_date):
         self.record.Compilation_date = compilation_date
         return self
+    def setPath(self,path):
+        self.record.path = path
+        return self
     def build(self):
         return self.record
     
@@ -56,5 +71,6 @@ class RecordBuilder :
             "Checksum_Flash": self.record.Checksum_Flash,
             "Checksum_EEPROM": self.record.Checksum_EEPROM,
             "Compilation_date": self.record.Compilation_date,
+            "Path": self.record.Path
 
         }
