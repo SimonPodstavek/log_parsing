@@ -10,7 +10,6 @@ class Record:
         self.Checksum_Flash = None
         self.Checksum_EEPROM = None
         self.Compilation_date = None
-        self.Contents = None
 
     def getBoard(self):
         return self.Board
@@ -44,9 +43,6 @@ class RecordBuilder :
     def setCompilation_date(self,compilation_date):
         self.record.Compilation_date = compilation_date
         return self
-    def setContents(self,contents):
-        self.record.Contents = contents
-        return self
     def build(self):
         return self.record
     
@@ -60,6 +56,5 @@ class RecordBuilder :
             "Checksum_Flash": self.record.Checksum_Flash,
             "Checksum_EEPROM": self.record.Checksum_EEPROM,
             "Compilation_date": self.record.Compilation_date,
-            "Contents": self.record.Contents
 
         }
