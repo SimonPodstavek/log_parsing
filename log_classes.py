@@ -72,5 +72,4 @@ class RecordBuilder :
             "Checksum_EEPROM": self.record.Checksum_EEPROM,
             "Compilation_date": self.record.Compilation_date,
             "Path": self.record.path
-
         }

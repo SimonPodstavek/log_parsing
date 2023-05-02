@@ -22,8 +22,6 @@ def create_session():
 
 
 
-create_session()
-
 #for mongoDB
 # def create_session():
 #     # cluster = "mongodb+srv://spodstavek:{}@cluster0.1ctzpcl.mongodb.net/implementation_log?retryWrites=true&w=majority".format(os.getenv("HMH_MONGO_LOG_PSSWD"))

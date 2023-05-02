@@ -204,7 +204,8 @@ def create_record_object(record:str, path:str) -> None or list:
 
     #Get first line and split it by ; and assign it to Record instance
     programmed_time_and_date = record.split(';')
-    records_obj_collection[record_id].setPAP_date(datetime.strptime(programmed_time_and_date[0], '%Y.%m.%d %H:%M:%S'))
+    original_date_format = datetime.strptime(programmed_time_and_date[0], '%Y.%m.%d %H:%M:%S')
+    records_obj_collection[record_id].setPAP_date(datetime.strftime(original_date_format, '%Y-%m-%d %H:%M:%S'))
 
     #DO NOT APPLY TO VERSION 2.0 and aboove
     #Delete 0x from the beginning of the string on positions 4-6 and reverse the string to get HDV. Assign HDV to Record instance
@@ -239,10 +240,11 @@ def create_record_object(record:str, path:str) -> None or list:
     if query is None:
         return 0
 
-    compiled_date=datetime.strptime(query.group(1), '%Y.%m.%d.')
-    records_obj_collection[record_id].setCompilation_date(compiled_date)
+    old_compiled_date=datetime.strptime(query.group(1), '%Y.%m.%d.')
 
-    records_obj_collection[record_id].setPath(path)
+    records_obj_collection[record_id].setCompilation_date(datetime.strftime(old_compiled_date, "%Y-%m-%d"))
+
+    records_obj_collection[record_id].setPath(path.lower())
 
     satisfying_records.append(record_id)
 
@@ -288,7 +290,14 @@ def main():
 
 
 
-
+def upload_unique_and_add_foreign_keys(conn,cursor,dict_parameter,database_parameters,table_name,column_names) -> None:
+    if dict_parameter not in database_parameters:
+        id = len(database_parameters)+1
+        cursor.execute("INSERT INTO \"{table_name}\" (\"{column_names[0]}\", \"{column_names[1]}\") VALUES({id}, \'{dict_parameter}\')".format(table_name = table_name, column_names = column_names, id = id, dict_parameter = dict_parameter))
+        database_parameters.append(dict_parameter)
+        return id
+    else:
+        return database_parameters.index(dict_parameter)+1
 
 
 def upload_records():
@@ -313,7 +322,9 @@ def upload_records():
     try:
         cursor.execute("SELECT * FROM \"Path\"")
         paths=cursor.fetchall()
-        paths=[_[0] for _ in paths]
+        paths=[_[1] for _ in paths]
+        existing_database_paths=paths.copy()
+
 
         cursor.execute("SELECT \"Actor_key\" FROM \"Actor\"")
         actors=cursor.fetchall()
@@ -325,11 +336,11 @@ def upload_records():
 
         cursor.execute("SELECT * FROM \"HDV\"")
         HDV=cursor.fetchall()
-        HDV=[_[0] for _ in HDV]
+        HDV=[_[1] for _ in HDV]
 
         cursor.execute("SELECT * FROM \"Software\"")
         software=cursor.fetchall()
-        software=[_[0] for _ in software]
+        software=[_[1] for _ in software]
 
     except:
         print('Chyba 110: Nastala chyba pri sťahovaní dát. Skontrolujte pripojenie k databáze.')
@@ -345,28 +356,35 @@ def upload_records():
     end_time=time.perf_counter()
     print('obj -> dict time: {} \n'.format(end_time-start_time))
 
-    for record in records_dictionary:
-        if record["Path"] in paths:
+
+
+    for i,record in enumerate(records_dictionary):
+        if record["Path"] in existing_database_paths:
             print("Duplicitný záznam")
             exit()
 
-        if record["Actor"] not in actors:
-            cursor.execute("INSERT INTO \"Actor\" (\"id\", \"Actor_key\") VALUES({id}, {actor_key})".format(id = len(actors)+1, actor_key = record["Actor"]))
-            actors.append(record["Actor"])
+        # if record["Actor"] not in actors:
+        #     id = len(actors)+1
+        #     cursor.execute("INSERT INTO \"Actor\" (\"id\", \"Actor_key\") VALUES({id}, {actor_key})".format(id = id, actor_key = record["Actor"]))
+        #     actors.append(record["Actor"])
+        #     record["Actor"] = id
+        # else:
+        #     record["Actor"] = actors.index(record["Actor"])
 
-        if record["Board"] not in boards:
-            cursor.execute("INSERT INTO \"Board\"(\"id\", \"Board_version\") VALUES({id}, {board_version})".format(id = len(boards)+1, board_version = record["Board"]))
-            boards.append(record["Board"])
+        record["Path"] = upload_unique_and_add_foreign_keys(conn,cursor,record["Path"],paths,"Path",["id", "Path"])
 
-        if record["Board"] not in boards:
-            cursor.execute("INSERT INTO \"Board\" VALUES({id}, {board_version})".format(id = len(boards)+1, board_version = record["Board"]))
-            boards.append(record["Board"])
-    
-    
-    conn.commit()
+        record["Actor"] = upload_unique_and_add_foreign_keys(conn,cursor,record["Actor"],actors,"Actor",["id", "Actor_key"])
 
+        record["Board"] = upload_unique_and_add_foreign_keys(conn,cursor,record["Board"],boards,"Board",["id", "Board_version"])
+
+        record["HDV"] = upload_unique_and_add_foreign_keys(conn,cursor,record["HDV"],HDV,"HDV",["id", "HDV"])
+
+        record["Software"] = upload_unique_and_add_foreign_keys(conn,cursor,record["Software"],HDV,"Software",["id", "Version"])
 
 
+        cursor.execute("INSERT INTO \"Program\"(\"HDV\",\"PAP_date\",\"Actor\",\"Board\",\"Software\",\"Compilation_date\",\"Active\",\"Path\") VALUES({HDV},\'{PAP_date}\', {actor}, {board}, {software}, \'{compilation_date}\', {active}, \'{path}\')".format(HDV = record["HDV"], PAP_date=record["PAP_date"], actor=record["Actor"], board=record["Board"], software=record["Software"], compilation_date=record["Compilation_date"], active="True", path=record["Path"]))
+        conn.commit()
+        print("Záznam {i} úspešne nahraný".format(i = i))
     
     cursor.close()
     conn.close()
@@ -397,4 +415,3 @@ if __name__ == '__main__':
 
 # # Vcislo
 # Výrobné číslo                   - V00000000
-
