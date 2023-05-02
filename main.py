@@ -83,7 +83,7 @@ def error_handler(record_id:int, error_number:int, error_message:str, required:b
         key_pressed.lower()
         match key_pressed:
             case b'p':
-                print("\n"+records[record_id]+"\n"+selection_menu)
+                print("\n"+records_obj_collection[record_id].getContent()+"\n"+selection_menu)
             case b'i':
                 while True:
                     user_corrected_value=input("Pre navrat do menu \"RETURNME\". Zadajte prosím opravenú hodnotu: ")
@@ -160,6 +160,8 @@ def create_record_object(record:str, path:str) -> None or list:
     #Create new empty instance of record class
     records_obj_collection.append(RecordBuilder())
     record_id=len(records_obj_collection)-1
+
+    records_obj_collection[record_id].setContent(record)
 
     #check if version is compatible with the script
     version_row = re.search(regex_expressions['software_version'], record)
