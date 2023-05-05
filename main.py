@@ -19,7 +19,7 @@ regex_expressions = {
     'safebytes_repair' : re.compile(r'[A-F 0-9 \s]*'),
     'double_new_line_remove' : re.compile(r'\n{2,}'),
     'software_version' : re.compile(r'Verzia SW\s*-\s*(\S*)\s'),
-    'any_software_version' : re.compile(r'^[A-Z]{2}}_\d$|^[A-Z]{4}_\d$'),
+    'any_software_version' : re.compile(r'^[A-Z]{2}_\d$|^[A-Z]{4}_\d$'),
     'hex_date' : re.compile(r'HEX\s*:\s*[A-Z]:.*:\s*(\d{4}\.\d{2}\.\d{2}\.)\s*\d{2}:\d{2}:\d{2}'),
     'any' : re.compile(r'')
 }
@@ -83,12 +83,12 @@ def error_handler(record_id:int, error_number:int, error_message:str, required:b
         key_pressed.lower()
         match key_pressed:
             case b'p':
-                print("\n"+records[record_id]+"\n"+selection_menu)
+                print("\n"+records_obj_collection[record_id].getContent()+"\n"+selection_menu)
             case b'i':
                 while True:
                     user_corrected_value=input("Pre navrat do menu \"RETURNME\". Zadajte prosím opravenú hodnotu: ")
                     if re.search(requirement,user_corrected_value) is not None:
-                        print("Zmena bola akceptovaná. \n \n \n \n")
+                        print("Zmena bola akceptovaná. \n \n \n")
                         return user_corrected_value
                     elif user_corrected_value.upper() == "RETURNME":
                         print(selection_menu)
@@ -145,7 +145,7 @@ def extract_2G_parameters(record_id:int,version_row:str) -> tuple:
         if repair == None:
             return
 
-    return (version)
+    return (version.group(0))
 
 
 
@@ -161,20 +161,19 @@ def create_record_object(record:str, path:str) -> None or list:
     records_obj_collection.append(RecordBuilder())
     record_id=len(records_obj_collection)-1
 
+    records_obj_collection[record_id].setContent(record)
+
     #check if version is compatible with the script
     version_row = re.search(regex_expressions['software_version'], record)
     if version_row is not None:
         version_row=version_row.group(1)
     
     if version_row is None:
-        version=error_handler(record_id, 105,"V zadanom zázname neexistuje verzia",True, "N/A",regex_expressions['any_software_version'])
-        if version == None:
+        response=error_handler(record_id, 105,"V zadanom zázname neexistuje verzia",True, "N/A",regex_expressions['any_software_version'])
+        if response == None:
             return
         records_obj_collection[record_id].setSoftware(response)
-
-
-
-    if re.search(regex_expressions['SW_version_2G'], version_row) is not None:
+    elif re.search(regex_expressions['SW_version_2G'], version_row) is not None:
         response=extract_2G_parameters(record_id,version_row)
         if response == None:
             return
@@ -193,6 +192,8 @@ def create_record_object(record:str, path:str) -> None or list:
     safebytes=re.search(regex_expressions['safebytes'], record)
     if safebytes is None:
         safebytes=error_handler(record_id, 108,"V zázname neboli nájdené safe bytes",True, "N/A",regex_expressions['safebytes_repair'])
+        if safebytes == None:
+            return
     else:
         safebytes=safebytes.group(1).split()
     
@@ -204,7 +205,8 @@ def create_record_object(record:str, path:str) -> None or list:
 
     #Get first line and split it by ; and assign it to Record instance
     programmed_time_and_date = record.split(';')
-    records_obj_collection[record_id].setPAP_date(datetime.strptime(programmed_time_and_date[0], '%Y.%m.%d %H:%M:%S'))
+    original_date_format = datetime.strptime(programmed_time_and_date[0], '%Y.%m.%d %H:%M:%S')
+    records_obj_collection[record_id].setPAP_date(datetime.strftime(original_date_format, '%Y-%m-%d %H:%M:%S'))
 
     #DO NOT APPLY TO VERSION 2.0 and aboove
     #Delete 0x from the beginning of the string on positions 4-6 and reverse the string to get HDV. Assign HDV to Record instance
@@ -225,9 +227,6 @@ def create_record_object(record:str, path:str) -> None or list:
     board_id=''.join(['V','0'*number_of_zeros,str(board_id)])
     records_obj_collection[record_id].setBoard(board_id)
 
-
-    records_obj_collection[record_id].setSoftware(version_row)
-
     chsumFlash=''.join(['0x',safebytes[0]])
     records_obj_collection[record_id].setChecksum_Flash(chsumFlash)
     
@@ -239,10 +238,11 @@ def create_record_object(record:str, path:str) -> None or list:
     if query is None:
         return 0
 
-    compiled_date=datetime.strptime(query.group(1), '%Y.%m.%d.')
-    records_obj_collection[record_id].setCompilation_date(compiled_date)
+    old_compiled_date=datetime.strptime(query.group(1), '%Y.%m.%d.')
 
-    records_obj_collection[record_id].setPath(path)
+    records_obj_collection[record_id].setCompilation_date(datetime.strftime(old_compiled_date, "%Y-%m-%d"))
+
+    records_obj_collection[record_id].setPath(path.lower())
 
     satisfying_records.append(record_id)
 
@@ -256,6 +256,8 @@ files=[r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2
 # files=[r'data\operation logs\2023\01\TM_PAP_2023-01.log']
 # files=[r'data\operation logs\2023\01\TU_PAP_2023-01.log']
 paths=[path.join(source, file) for file in files]
+
+
 
 
 
@@ -288,6 +290,9 @@ def main():
 
 
 
+
+
+
 def upload_unique_and_add_foreign_keys(conn,cursor,dict_parameter,database_parameters,table_name,column_names) -> None:
     if dict_parameter not in database_parameters:
         id = len(database_parameters)+1
@@ -295,7 +300,14 @@ def upload_unique_and_add_foreign_keys(conn,cursor,dict_parameter,database_param
         database_parameters.append(dict_parameter)
         return id
     else:
-        return database_parameters.index(dict_parameter)
+        return database_parameters.index(dict_parameter)+1
+
+
+
+
+
+
+
 
 
 def upload_records():
@@ -318,9 +330,11 @@ def upload_records():
 
     #fetch data from DB
     try:
-        cursor.execute("SELECT * FROM \"Path\"")
+        cursor.execute("SELECT \"Path\" FROM \"Path\"")
         paths=cursor.fetchall()
         paths=[_[0] for _ in paths]
+        existing_database_paths=paths.copy()
+
 
         cursor.execute("SELECT \"Actor_key\" FROM \"Actor\"")
         actors=cursor.fetchall()
@@ -330,11 +344,11 @@ def upload_records():
         boards=cursor.fetchall()
         boards=[_[0] for _ in boards]
 
-        cursor.execute("SELECT * FROM \"HDV\"")
+        cursor.execute("SELECT \"HDV\" FROM \"HDV\"")
         HDV=cursor.fetchall()
         HDV=[_[0] for _ in HDV]
 
-        cursor.execute("SELECT * FROM \"Software\"")
+        cursor.execute("SELECT \"Version\" FROM \"Software\"")
         software=cursor.fetchall()
         software=[_[0] for _ in software]
 
@@ -352,19 +366,15 @@ def upload_records():
     end_time=time.perf_counter()
     print('obj -> dict time: {} \n'.format(end_time-start_time))
 
-    for record in records_dictionary:
-        if record["Path"] in paths:
+
+
+    for i,record in enumerate(records_dictionary):
+        if record["Path"] in existing_database_paths:
             print("Duplicitný záznam")
             exit()
 
-        # if record["Actor"] not in actors:
-        #     id = len(actors)+1
-        #     cursor.execute("INSERT INTO \"Actor\" (\"id\", \"Actor_key\") VALUES({id}, {actor_key})".format(id = id, actor_key = record["Actor"]))
-        #     actors.append(record["Actor"])
-        #     record["Actor"] = id
-        # else:
-        #     record["Actor"] = actors.index(record["Actor"])
 
+        record["Path"] = upload_unique_and_add_foreign_keys(conn,cursor,record["Path"],paths,"Path",["id", "Path"])
 
         record["Actor"] = upload_unique_and_add_foreign_keys(conn,cursor,record["Actor"],actors,"Actor",["id", "Actor_key"])
 
@@ -372,17 +382,12 @@ def upload_records():
 
         record["HDV"] = upload_unique_and_add_foreign_keys(conn,cursor,record["HDV"],HDV,"HDV",["id", "HDV"])
 
-        record["Software"] = upload_unique_and_add_foreign_keys(conn,cursor,record["Software"],HDV,"Software",["id", "Version"])
+        record["Software"] = upload_unique_and_add_foreign_keys(conn,cursor,record["Software"],software,"Software",["id", "Version"])
 
-        cursor.execute("INSERT INTO \"Program\"(\"HDV\",\"PAP_date\",\"PAP_time\",\"Actor\",\"Board\",\"Software\",\"Compilation_date\",\"Active\",\"Content\",\"Path\") VALUES({HDV},{PAP_date})".format(HDV = record["HDV"], PAP_date=record["PAP_date"]))
+
+        cursor.execute("INSERT INTO \"Program\"(\"HDV\",\"PAP_date\",\"Actor\",\"Board\",\"Software\",\"Compilation_date\",\"Active\",\"Path\") VALUES({HDV},\'{PAP_date}\', {actor}, {board}, {software}, \'{compilation_date}\', {active}, \'{path}\')".format(HDV = record["HDV"], PAP_date=record["PAP_date"], actor=record["Actor"], board=record["Board"], software=record["Software"], compilation_date=record["Compilation_date"], active="True", path=record["Path"]))
         conn.commit()
-        paths=cursor.fetchall()
-        paths=[_[0] for _ in paths]
-    
-    conn.commit()
-
-
-
+        print("Záznam {i} úspešne nahraný".format(i = i))
     
     cursor.close()
     conn.close()
@@ -402,7 +407,6 @@ def upload_records():
 
 
 if __name__ == '__main__':
-    print("Idem")
     main()
 
 

@@ -26,6 +26,7 @@ class Record:
         self.Checksum_EEPROM = None
         self.Compilation_date = None
         self.path = None
+        self.content = None
 
 class RecordBuilder :
     #Create new empty instance of record class
@@ -55,11 +56,17 @@ class RecordBuilder :
     def setCompilation_date(self,compilation_date):
         self.record.Compilation_date = compilation_date
         return self
+    def setContent(self,content):
+        self.record.content = content
+        return self
     def setPath(self,path):
         self.record.path = path
         return self
     def build(self):
         return self.record
+    
+    def getContent(self):
+        return self.record.content
     
     def to_dict(self):
         return {

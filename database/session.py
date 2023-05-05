@@ -1,5 +1,4 @@
 import os
-from pymongo import MongoClient
 import psycopg2
 
 
@@ -21,8 +20,6 @@ def create_session():
         exit()
 
 
-
-create_session()
 
 #for mongoDB
 # def create_session():
