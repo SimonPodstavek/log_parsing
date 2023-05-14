@@ -2,7 +2,7 @@ import re
 from log_classes import *
 from datetime import datetime,date
 import time
-from os import path, access, R_OK
+from os import path, access, R_OK, listdir
 from database.session import *
 from pprint import pprint
 from msvcrt import getch
@@ -248,13 +248,23 @@ def create_record_object(record:str, path:str) -> None or list:
 
 
 
-
+classmethod
 #go two levels up to get to the root directory
-source = path.abspath(path.join(path.dirname(__file__), '..'))
-# files=[r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log',r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log']
+starting_path = r"C:\Users\Simon\Desktop\log_analysis\data\operation logs\2023"
+x=[]
+
+for root, directories, files in os.walk(starting_path):
+    x.append(files)
+
 files=[r'data\operation logs\2023\01\TM_PAP_2023-01.log',r'data\operation logs\2023\01\TU_PAP_2023-01.log']
-# files=[r'data\operation logs\2023\01\TM_PAP_2023-01.log']
-# files=[r'data\operation logs\2023\01\TU_PAP_2023-01.log']
+
+
+
+for root, directories, files in os.walk(starting_path):
+    print(files)
+
+
+
 paths=[path.join(source, file) for file in files]
 
 
@@ -392,29 +402,9 @@ def upload_records():
     cursor.close()
     conn.close()
 
-        
-
-
-
-    # start_time=time.perf_counter()
-    # collection=create_session().record
-    # collection.insert_many(records_dictionary)
-    # end_time=time.perf_counter()
-    # print("Vytvorenie relácie a upload: {}\n".format(end_time-start_time))
     exit()    
-
 
 
 
 if __name__ == '__main__':
     main()
-
-
-# # Datum a cas
-# Prvy riadok
-
-# 2023.01.09 12:49:45; PAP 2.0.221220; 273: [SK] HMH (OZP - Tibor Michálik)
-
-
-# # Vcislo
-# Výrobné číslo                   - V00000000

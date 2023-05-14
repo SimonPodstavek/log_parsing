@@ -18,13 +18,3 @@ def create_session():
     except:
         print("Chyba 109: Nepodarilo sa utvoriť reláciu medzi databázou a klientom.")
         exit()
-
-
-
-#for mongoDB
-# def create_session():
-#     # cluster = "mongodb+srv://spodstavek:{}@cluster0.1ctzpcl.mongodb.net/implementation_log?retryWrites=true&w=majority".format(os.getenv("HMH_MONGO_LOG_PSSWD"))
-#     cluster = "mongodb://localhost:27017"
-#     client = MongoClient(cluster)
-#     db = client.implementation_log
-#     return db
