@@ -126,7 +126,7 @@ def create_record_object(record:str, path:str) -> None or list:
             return
         record_object_collection[record_id].setSoftware(response)
     elif re.search(regex_expressions['SW_version_3G'], version_row) is not None:
-        print(1)
+        print("3G SW")
         return 
     else:
         version=error_handler(record_id, 106,"Zadaná verzia nespĺňa kritéria pre SW ver. 2G ani 3G",True,version_row, regex_expressions['any_software_version'])
