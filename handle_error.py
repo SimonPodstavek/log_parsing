@@ -1,4 +1,4 @@
-import re
+import reupload_records
 from msvcrt import getch
 from log_classes import *
 import time

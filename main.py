@@ -196,7 +196,7 @@ def create_record_object(record:str, path:str) -> None or list:
 
     old_compiled_date=datetime.strptime(query.group(1), '%Y.%m.%d.')
 
-    record_object_collection[record_id].setCompilation_date(datetime.strftime(old_compiled_date, "%Y-%m-%d"))
+    record_object_collection[record_id].setCompilation_timedate(datetime.strftime(old_compiled_date, "%Y-%m-%d"))
 
     record_object_collection[record_id].setPath('/'.join(path.lower().split('\\')[-3:]))
 

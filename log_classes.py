@@ -24,7 +24,7 @@ class Record:
         self.Software = None
         self.Checksum_Flash = None
         self.Checksum_EEPROM = None
-        self.Compilation_date = None
+        self.Compilation_timedate = None
         self.path = None
         self.content = None
 
@@ -53,8 +53,8 @@ class RecordBuilder :
     def setChecksum_EEPROM(self,checksum_EEPROM):
         self.record.Checksum_EEPROM = checksum_EEPROM
         return self
-    def setCompilation_date(self,compilation_date):
-        self.record.Compilation_date = compilation_date
+    def setCompilation_timedate(self,compilation_timedate):
+        self.record.Compilation_timedate = compilation_timedate
         return self
     def setContent(self,content):
         self.record.content = content
@@ -77,6 +77,6 @@ class RecordBuilder :
             "Software": self.record.Software,
             "Checksum_Flash": self.record.Checksum_Flash,
             "Checksum_EEPROM": self.record.Checksum_EEPROM,
-            "Compilation_date": self.record.Compilation_date,
+            "Compilation_timedate": self.record.Compilation_timedate,
             "Path": self.record.path
         }

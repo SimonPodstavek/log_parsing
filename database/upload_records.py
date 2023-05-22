@@ -107,19 +107,19 @@ def upload_records(satisfying_records:list, total_number_of_records:int):
 
         record["Software"] = upload_unique_and_add_foreign_keys(cursor,record["Software"],software,"Software",["id", "Version"],True,"Software","\"CHSUM_Flash\" = \'{Checksum_Flash}\',\"CHSUM_EEPROM\" = \'{Checksum_EEPROM}\'".format(Checksum_Flash = record["Checksum_Flash"],Checksum_EEPROM = record["Checksum_EEPROM"]))
 
-        valky+="({HDV},\'{PAP_date}\', {actor}, {board}, {software}, \'{compilation_date}\', {active}, {path}),".format(HDV = record["HDV"], PAP_date=record["PAP_date"], actor=record["Actor"], board=record["Board"], software=record["Software"], compilation_date=record["Compilation_date"], active="True", path=record["Path"])
+        valky+="({HDV},\'{PAP_date}\', {actor}, {board}, {software}, \'{compilation_timedate}\', {active}, {path}),".format(HDV = record["HDV"], PAP_date=record["PAP_date"], actor=record["Actor"], board=record["Board"], software=record["Software"], compilation_timedate=record["Compilation_timedate"], active="True", path=record["Path"])
 
         if (i+1)%100==0:
             valky=valky[:-1]
-            cursor.execute("INSERT INTO \"Program\"(\"HDV\",\"PAP_date\",\"Actor\",\"Board\",\"Software\",\"Compilation_date\",\"Active\",\"Path\"){a}".format(a=valky))
+            cursor.execute("INSERT INTO \"Program\"(\"HDV\",\"PAP_date\",\"Actor\",\"Board\",\"Software\",\"Compilation_timedate\",\"Active\",\"Path\"){a}".format(a=valky))
             conn.commit()
             valky="VALUES"
             print("Záznamy {} - {} boli nahrané do databázy".format(i-99,i+1))
 
 
     valky=valky[:-1]
-    cursor.execute("INSERT INTO \"Program\"(\"HDV\",\"PAP_date\",\"Actor\",\"Board\",\"Software\",\"Compilation_date\",\"Active\",\"Path\"){a}".format(a=valky))
-    # cursor.execute("INSERT INTO \"Program\"(\"HDV\",\"PAP_date\",\"Actor\",\"Board\",\"Software\",\"Compilation_date\",\"Active\",\"Path\") VALUES({HDV},\'{PAP_date}\', {actor}, {board}, {software}, \'{compilation_date}\', {active}, \'{path}\')".format(HDV = record["HDV"], PAP_date=record["PAP_date"], actor=record["Actor"], board=record["Board"], software=record["Software"], compilation_date=record["Compilation_date"], active="True", path=record["Path"]))
+    cursor.execute("INSERT INTO \"Program\"(\"HDV\",\"PAP_date\",\"Actor\",\"Board\",\"Software\",\"Compilation_timedate\",\"Active\",\"Path\"){a}".format(a=valky))
+    # cursor.execute("INSERT INTO \"Program\"(\"HDV\",\"PAP_date\",\"Actor\",\"Board\",\"Software\",\"Compilation_timedate\",\"Active\",\"Path\") VALUES({HDV},\'{PAP_date}\', {actor}, {board}, {software}, \'{compilation_timedate}\', {active}, \'{path}\')".format(HDV = record["HDV"], PAP_date=record["PAP_date"], actor=record["Actor"], board=record["Board"], software=record["Software"], compilation_timedate=record["Compilation_timedate"], active="True", path=record["Path"]))
     print("Záznamy nahraté do databázy")
     conn.commit()
 
