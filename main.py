@@ -78,10 +78,8 @@ def collect_records_from_files(list_of_files:dict)->tuple:
     #Split contents of each file into individual records
         if re.compile(r'.*PAP.*\.log').search(file):
             records_list=log_contents[_].split('-'*80)
-        elif re.compile(r'.*KAM.*\.log').search(file) is not None:
-            records_list=log_contents[_].split('-'*60)
         else:
-            print("Chyba 113: Súbor {} nie je log typu KAM ani PAP. FILE_SKIPPED".format(file))
+            print("Chyba 113: Súbor {} nie je log typu PAP. FILE_SKIPPED".format(file))
             continue
 
         #Remove double new lines and empty records
@@ -218,20 +216,12 @@ def main():
 
     starting_path = abspath(join(dirname(__file__), '../data/operation logs/a/2023'))
     paths=[]
-
-    # starting_path = abspath(join(dirname(__file__), '../../data/operation logs/a/2023'))
-    # paths=[]
-
-
     for root, directories, selected_files in walk(starting_path):
         if len(selected_files) != 0:
             for i, file in enumerate(selected_files):
                 if regex_expressions['supported_file_types'].search(file) is not None:
                     paths.append(join(root,file))
 
-
-
-    global record_paths
 
     records_of_files = collect_records_from_files(paths)
     number_of_records = sum(file.getLength() for file in records_of_files)
