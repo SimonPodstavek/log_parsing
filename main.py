@@ -6,7 +6,7 @@ from log_classes import *
 from handle_error import error_handler
 from datetime import datetime
 from pprint import pprint
-from database.upload_records import upload_records
+from upload_records import upload_records
 
 
 
@@ -28,53 +28,67 @@ regex_expressions = {
 }
 
 
-
-
-
-
 def collect_records_from_files(list_of_files:dict)->tuple:
-    #regex that finds more than one new line and replaces it with one new line
-    
-    log_content,valid_files,records_list = [],[],[]
+    log_contents,valid_files,records_list,file_object_collection = [],[],[],[]
 
-    files_with_warnings = []
-    #start checking if files are valid
-    valid_files=list_of_files
+    #log_contents -> list of strings, each string is contents of a file
+    #valid_files -> list of files that are valid
+    #records_list -> list of records, each record is a list of strings
+    #file_object_collection -> list of File objects
 
+
+    #Assign list of all files to valid_files, so that we can remove erroneous files from the list later
+    valid_files=list_of_files.copy()
+
+    #check if files exist
     for _,file in enumerate(list_of_files):
-        # check if file exists
         if not path.exists(file):
-            files_with_warnings.append(file)
+            valid_files.remove(file)
             print("Chyba 100: Súbor {} neexistuje.".format(file))
             continue
 
-        # check if user has sufficient permissions to read file
+        # check if user has sufficient permissions to read contents of a file
         if not access(file,R_OK):
-            files_with_warnings.append(file)
+            valid_files.remove(file)
             print("Chyba 101: K suboru {} nemá klient dostatočné povolenia na čítanie súboru.".format(file))
             continue
 
-
-    #remove erroneous files from the list
-    for file in files_with_warnings:
-            list_of_files.remove(file)
-
-    if len(list_of_files) == 0:
-        print("Chyba 102: V adresári {} sa nenachádzajú žiadne súbory.".format(list_of_files))
+    #If there aren't any valid files, exit
+    if len(valid_files) == 0:
+        print("Chyba 102: V zvolenom adresári sa nenachádzajú žiadne súbory.")
         sys.exit(102)
 
-
-
-    list_of_records=[]
+    #Read contents of all valid files
     for _, file in enumerate(valid_files):
-        with open(file, 'r', encoding='utf-8-sig') as log:
-            log_content.append(log.read().strip())
-        records_list=log_content[_].split('-'*80)
+        #open file and decode contents
+        with open(file, 'rb') as log:
+            log=log.read()
+
+            try:
+                if log[0] == 255:
+                    log=log.decode('utf-16')
+                else:     
+                        log=log.decode('utf-8-sig')
+            except:
+                print("Chyba 112: Pre súbor {} nebolo nájdené podporované enkódovanie. FILE_SKIPPED".format(file))
+                continue
+        
+        log_contents.append(log.strip())
+        
+    #Split contents of each file into individual records
+        if re.compile(r'.*PAP.*\.log').search(file):
+            records_list=log_contents[_].split('-'*80)
+        elif re.compile(r'.*KAM.*\.log').search(file) is not None:
+            records_list=log_contents[_].split('-'*60)
+        else:
+            print("Chyba 113: Súbor {} nie je log typu KAM ani PAP. FILE_SKIPPED".format(file))
+            continue
+
+        #Remove double new lines and empty records
         records_list=[re.sub(regex_expressions['double_new_line_remove'], '\n', x).strip() for x in records_list]
         records_list=list(filter(bool,records_list))
-        list_of_records.append(File(records_list, file))
-    return list_of_records
-
+        file_object_collection.append(File(records_list, file))
+    return file_object_collection
 
 
 def extract_function(record:str) -> str:
@@ -95,13 +109,6 @@ def extract_2G_parameters(record_id:int,version_row:str) -> tuple:
             return 111
 
     return (version.group(0))
-
-
-
-
-
-
-
 
 
 def create_record_object(record:str, path:str) -> None or list:
@@ -165,9 +172,9 @@ def create_record_object(record:str, path:str) -> None or list:
     record_object_collection[record_id].setPAP_date(datetime.strftime(original_date_format, '%Y-%m-%d %H:%M:%S'))
 
     #DO NOT APPLY TO VERSION 2.0 and aboove
-    #Delete 0x from the beginning of the string on positions 4-6 and reverse the string to get HDV. Assign HDV to Record instance
-    # HDV=([x for x in safebytes[7:4:-1]] )
-    # records_collection[record_id].setHDV(''.join(HDV))
+    # Delete 0x from the beginning of the string on positions 4-6 and reverse the string to get HDV. Assign HDV to Record instance
+    HDV=([x for x in safebytes[7:4:-1]] )
+    record_object_collection[record_id].setHDV(''.join(HDV))
 
     actor_id=([x for x in safebytes[9:7:-1]] )
     actor_id.insert(0,'0x')
@@ -212,6 +219,10 @@ def main():
     starting_path = abspath(join(dirname(__file__), '../data/operation logs/a/2023'))
     paths=[]
 
+    # starting_path = abspath(join(dirname(__file__), '../../data/operation logs/a/2023'))
+    # paths=[]
+
+
     for root, directories, selected_files in walk(starting_path):
         if len(selected_files) != 0:
             for i, file in enumerate(selected_files):
@@ -231,10 +242,11 @@ def main():
         for record in file.getRecords():
             if create_record_object(record,path) == 111:
                 immediate_upload=True
+                break
 
         if immediate_upload == True:
-            break	    
-    
+            break
+
 
 
 
