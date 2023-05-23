@@ -1,5 +1,6 @@
 from datetime import datetime
 
+#File class contains list of records and path to the file
 class File:
     def __init__(self,records,path) -> None:
         self.records = records
@@ -13,7 +14,7 @@ class File:
         return len(self.records)
 
 
-
+#Record class is a template for RecordBuilder
 class Record:
     def __init__(self) -> None:
         self.HDV = None
@@ -28,8 +29,8 @@ class Record:
         self.path = None
         self.content = None
 
+#New empty instance of record class
 class RecordBuilder :
-    #Create new empty instance of record class
     def __init__(self) -> None:
         self.record = Record()
     def setHDV(self,HDV):
