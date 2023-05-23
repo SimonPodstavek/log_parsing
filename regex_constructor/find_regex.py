@@ -7,7 +7,6 @@ import pickle
 sys.path.append('../src')
 from log_classes import File
 
-
 # Load existing regex expressions
 with open('regex_constructor/regex_expressions.pickle', 'rb') as expressions_file:
     regex_expressions=pickle.load(expressions_file)
@@ -29,14 +28,17 @@ with open('regex_constructor/regex_expressions.pickle', 'rb') as expressions_fil
 
 #merger regex_expressions with another dictionary
 regex_expressions.update({'kamw_split' : r'#{60}\n.*#{60}'})
+
+
+
 def collect_records_from_files(list_of_files:dict)->tuple:
+    failed_files=0
     log_contents,valid_files,records_list,file_object_collection = [],[],[],[]
 
     #log_contents -> list of strings, each string is contents of a file
     #valid_files -> list of files that are valid
     #records_list -> list of records, each record is a list of strings
     #file_object_collection -> list of File objects
-
 
     #Assign list of all files to valid_files, so that we can remove erroneous files from the list later
     valid_files=list_of_files.copy()
@@ -64,41 +66,43 @@ def collect_records_from_files(list_of_files:dict)->tuple:
         #open file and decode contents
         with open(file, 'rb') as log:
             log=log.read()
-
+            
             try:
                 if log[0] == 255:
                     log=log.decode('utf-16')
                 else:     
-                        log=log.decode('utf-8-sig')
+                    log=log.decode('utf-8')
             except:
                 print("Chyba 112: Pre súbor {} nebolo nájdené podporované enkódovanie. FILE_SKIPPED".format(file))
+                failed_files+=1
                 continue
         
-        log_contents.append(log.strip())
+        log_contents = log.strip()
         
 
-    #Split contents of each file into individual records
+        #Split contents of each file into individual records
         if re.compile(r'.*PAP.*\.log').search(file):
-            records_list=log_contents[i].split('-'*80)
+            records_list=log_contents.split('-'*80)
         elif re.compile(r'.*KAM.*\.log').search(file):
-            records_list=log_contents[i].split('-'*60)
+            records_list=log_contents.split('-'*60)
         elif re.compile(r'.*kamw.*\.log').search(file):
-            # records_list=re.split(r'\n', log_contents[i])
-            records_list=re.split(r'.*#{60}\r\n.*\r\n#{60}.*', log_contents[i])
+            records_list=re.split('.*#{60}\r\n.*\r\n#{60}.*', log_contents)
             
         else:
             print("Chyba 113: Súbor {} nie je log typu KAM ani PAP. FILE_SKIPPED".format(file))
+            failed_files+=1
             continue
 
         #Remove double new lines and empty records
         records_list=[re.sub(regex_expressions['double_new_line_remove'], '\n', x).strip() for x in records_list]
         records_list=list(filter(bool,records_list))
         file_object_collection.append(File(records_list, file))
-    return file_object_collection
+    return file_object_collection, failed_files
 
 
 
 def main():
+
     starting_path = abspath(join(dirname(__file__), '../../data/operation logs/'))
     paths=[]
     
@@ -114,9 +118,9 @@ def main():
         print(print("Chyba 102: V adresári {} sa nenachádzajú žiadne súbory.".format(starting_path)))
         return 102
     
-
-    records_of_files = collect_records_from_files(paths)
+    records_of_files, failed_files = collect_records_from_files(paths)
     number_of_records = sum(file.getLength() for file in records_of_files)
+    print("Počet spracovanch súborov: {} z celkového počtu: {}, úspešnosť: {}%".format(len(paths), failed_files+len(paths), 100*(len(paths)/(failed_files+len(paths)))))
     print(number_of_records)
 
 
