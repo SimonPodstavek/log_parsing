@@ -165,14 +165,15 @@ def create_record_object(record:str, path:str) -> None or list:
 
 
     #Get first line and split it by ; and assign it to Record instance
-    programmed_time_and_date = record.split(';')
-    original_date_format = datetime.strptime(programmed_time_and_date[0], '%Y.%m.%d %H:%M:%S')
+    programmed_time_and_date = record.split(';')[0]
+    original_date_format = datetime.strptime(programmed_time_and_date, '%Y.%m.%d %H:%M:%S')
     record_object_collection[record_id].setPAP_date(datetime.strftime(original_date_format, '%Y-%m-%d %H:%M:%S'))
 
     #DO NOT APPLY TO VERSION 2.0 and aboove
     # Delete 0x from the beginning of the string on positions 4-6 and reverse the string to get HDV. Assign HDV to Record instance
-    HDV=([x for x in safebytes[7:4:-1]] )
-    record_object_collection[record_id].setHDV(''.join(HDV))
+
+    # HDV=([x for x in safebytes[7:4:-1]] )
+    # record_object_collection[record_id].setHDV(''.join(HDV))
 
     actor_id=([x for x in safebytes[9:7:-1]] )
     actor_id.insert(0,'0x')
@@ -214,7 +215,7 @@ def create_record_object(record:str, path:str) -> None or list:
 
 def main():
 
-    starting_path = abspath(join(dirname(__file__), '../data/operation logs/a/2023'))
+    starting_path = abspath(join(dirname(__file__), '../data/operation logs/operational/2023'))
     paths=[]
     for root, directories, selected_files in walk(starting_path):
         if len(selected_files) != 0:
@@ -236,10 +237,6 @@ def main():
 
         if immediate_upload == True:
             break
-
-
-
-
     upload_records(satisfying_records,number_of_records)
 
 if __name__ == '__main__':

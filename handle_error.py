@@ -1,9 +1,9 @@
-import reupload_records
+import re
 from msvcrt import getch
 from log_classes import *
 import time
 import sys
-from database.upload_records import upload_records
+from upload_records import upload_records
 
 regex_expressions = {
     'supported_file_types' : re.compile(r'.*_PAP_.*\.log'),
@@ -21,8 +21,7 @@ regex_expressions = {
 
 
 def error_handler(record_object_collection:list, record_id:int , error_number:int, error_message:str, required:bool,queried_string:str="N/A", requirement:str=regex_expressions['any']) -> 0 or str:
-    # return 0
-    selection_menu="------------------------- \n Vyberte si z nasledujúcich príkazov: \n Print záznamu -> P \n Nahradenie problémovej hodnoty -> I \n Preskočiť záznam -> ENTER \n Vynechať hodnotu v zázname -> E \n  Ukončiť spracovanie a uložiť záznamy -> E \n ------------------------- \n"
+    selection_menu="------------------------- \n Vyberte si z nasledujúcich príkazov: \n Print záznamu -> P \n Nahradenie problémovej hodnoty -> I \n Preskočiť záznam -> ENTER \n Vynechať hodnotu v zázname -> E \n  Ukončiť spracovanie a uložiť záznamy -> ESC \n ------------------------- \n"
     print("Pri spracovaní záznamu č. {record_id} vznikla chyba: {error_number}. \nPopis chyby: {error_message} \nProblematický reťazec: {queried_string} \n".format(queried_string=queried_string, error_message=error_message,record_id=record_id,error_number=error_number))
     print(selection_menu)
     while True:
