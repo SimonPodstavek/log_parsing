@@ -69,6 +69,9 @@ class RecordBuilder :
     def getContent(self):
         return self.record.content
     
+    def getPath(self):
+        return self.record.path  
+    
     def to_dict(self):
         return {
             "HDV": self.record.HDV,
