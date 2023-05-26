@@ -110,7 +110,6 @@ def extract_2G_parameters(record_id:int,version_row:str) -> tuple:
 
 
 def create_record_object(record:str, path:str) -> None or list:
-
     #Create new empty instance of record class
     record_object_collection.append(RecordBuilder())
     record_id=len(record_object_collection)-1

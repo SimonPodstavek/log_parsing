@@ -55,8 +55,8 @@ with open('regex_constructor/regex_template_records.pickle', 'rb') as file:
 
 #USE THIS TO MANUALLY ADD OR REMOVE NEW REGEX EXPRESSIONS
 # regex_expressions.pop('PAP_date')
-regex_expressions.update({'KAM_date': '$^'})
-regex_template_records.update({'KAM_date': []})
+# regex_expressions.update({'KAM_date': '$^'})
+# regex_template_records.update({'KAM_date': []})
 
 
 def collect_records_from_files(list_of_files:dict)->tuple:
@@ -100,15 +100,15 @@ def collect_records_from_files(list_of_files:dict)->tuple:
                 #open file and try to decode its contents as UTF-16 or UTF-8
                 log=opened_file.read()
                 if log[0] == 255:
-                    log=log.decode('utf-16')
+                    log = log.decode('utf-16')
                 
                 else:     
-                    log=log.decode('utf-8-sig')
+                    log = log.decode('utf-8-sig')
 
-                file_decoded=True
+                file_decoded = True
 
             except:
-                file_decoded=False
+                file_decoded = False
         opened_file.close()
 
 
@@ -121,16 +121,10 @@ def collect_records_from_files(list_of_files:dict)->tuple:
         if not file_decoded:
             with open(file, 'r', encoding='windows-1250') as opened_file:
                 try:
-                        log=opened_file.read()
-                        if log[0] == 255:
-                            log=log.decode('utf-16')
-                        
-                        else:     
-                            log=log.decode('utf-8-sig')
-
-                        file_decoded=True  
+                    log = opened_file.read()
+                    file_decoded = True
                 except:
-                    file_decoded=False
+                    file_decoded = False
             opened_file.close()
 
 
@@ -156,7 +150,7 @@ def collect_records_from_files(list_of_files:dict)->tuple:
             records_list = [''.join(x) for x in records_list]
               
         else:
-            # print("Chyba 113: Súbor {} nie je log typu KAM ani PAP. FILE_SKIPPED".format(file))
+            print("Chyba 113: Súbor {} nie je log typu KAM ani PAP. FILE_SKIPPED".format(file))
             failed_files_counter+=1
             continue
 
@@ -165,18 +159,14 @@ def collect_records_from_files(list_of_files:dict)->tuple:
         records_list=list(filter(bool,records_list))
         records_list = [x for x in records_list if len(x.strip()) > 150] 
         file_object_collection.append(File(records_list, file))
+
     return file_object_collection, failed_files_counter
 
 
 
 
 def validating_fun(query:str)->None:
-    query = query.strip()
-    query = re.sub(r'\s+', ' ', query)
-    query = query.replace('. ', '.')
-    query = datetime.strptime(query, '%d.%m.%Y %H:%M:%S')
-    return query
-    
+    pass
 
 
 
@@ -216,9 +206,7 @@ def validate_regex(missing_regex_name:str, record:list, regex_expressions:list,r
 
 def find_pap_regex(record:list)->None:
     #find record creation date
-
     query = re.search(regex_expressions['PAP_date'], record)
-    
     if not query:
         user_input_regex = validate_regex('PAP_date', record, regex_expressions, regex_template_records)
         if user_input_regex is not None:
@@ -233,7 +221,19 @@ def find_pap_regex(record:list)->None:
 
 def find_kam_regex(record:list, file:File)->None:
     #find record creation date
-    query = re.search(regex_expressions['KAM_date'], record)
+    query = re.search(regex_expressions['KAM_date'], record)  
+    #KAM_date
+    query = query.group(0).strip()
+    query = re.sub(r'\s+', ' ', query)
+    query = query.replace('. ', '.')
+    for format in ('%d.%m.%Y %H:%M:%S','%m/%d/%Y %H:%M:%S'):
+        try:
+            datetime.strptime(query, format)
+            break
+        except:
+            pass
+    raise ValueError('Pre KAM nebol nájdený platný dátum a čas.')
+
 
     if query is None:
         user_input_regex = validate_regex('KAM_date', record, regex_expressions, regex_template_records)
@@ -276,14 +276,12 @@ def main(starting_path:str):
 
     # find just first occurence of regex expression
     i=0
-    # for file in file_object_collection:
-    #     for record in file.getRecords():
-    #         if 'pap' in  file.getPath().lower():
-    #             # print(i)
-    #             # i+=1
-    #             find_pap_regex(record)
-    #         else:
-    #             find_kam_regex(record, file)
+    for file in file_object_collection:
+        for record in file.getRecords():
+            if 'pap' in  file.getPath().lower():
+                pass
+            else:
+                find_kam_regex(record, file)
 
 
 
