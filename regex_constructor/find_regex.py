@@ -93,20 +93,54 @@ def collect_records_from_files(list_of_files:dict)->tuple:
 
     #Read contents of all valid files
     for i, file in enumerate(valid_files):
-        #open file and decode contents
-        with open(file, 'rb') as log:
-            log=log.read()
-            
+
+        file_decoded=False
+        with open(file, 'rb') as opened_file:
             try:
+                #open file and try to decode its contents as UTF-16 or UTF-8
+                log=opened_file.read()
                 if log[0] == 255:
                     log=log.decode('utf-16')
+                
                 else:     
                     log=log.decode('utf-8-sig')
+
+                file_decoded=True
+
             except:
-                print("Chyba 112: Pre súbor {} nebolo nájdené podporované enkódovanie. FILE_SKIPPED".format(file))
-                failed_files_counter+=1
-                continue
-        
+                file_decoded=False
+        opened_file.close()
+
+
+
+
+
+
+
+        #if decoding fails, try to decode as windows-1250
+        if not file_decoded:
+            with open(file, 'r', encoding='windows-1250') as opened_file:
+                try:
+                        log=opened_file.read()
+                        if log[0] == 255:
+                            log=log.decode('utf-16')
+                        
+                        else:     
+                            log=log.decode('utf-8-sig')
+
+                        file_decoded=True  
+                except:
+                    file_decoded=False
+            opened_file.close()
+
+
+
+
+        if not file_decoded:
+            print("Chyba 112: Pre súbor {} nebolo nájdené podporované enkódovanie. FILE_SKIPPED".format(file))
+            failed_files_counter+=1
+            continue
+
         log_contents = log.strip()
         
         #the following regex expressions are used to determine the type of log file
