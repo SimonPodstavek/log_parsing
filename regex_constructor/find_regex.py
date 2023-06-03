@@ -54,9 +54,9 @@ with open('regex_constructor/regex_template_records.pickle', 'rb') as file:
 #     regex_expressions.update({key: '$^'})  
 
 #USE THIS TO MANUALLY ADD OR REMOVE NEW REGEX EXPRESSIONS
-# regex_expressions.pop('PAP_date')
-# regex_expressions.update({'KAM_date': '$^'})
-# regex_template_records.update({'KAM_date': []})
+# regex_expressions.pop('Actor')
+# regex_expressions.update({'KAM_actor': '$^'})
+# regex_template_records.update({'KAM_actor': []})
 
 
 def collect_records_from_files(list_of_files:dict)->tuple:
@@ -166,14 +166,14 @@ def collect_records_from_files(list_of_files:dict)->tuple:
 
 
 def validating_fun(query:str)->None:
-    pass
+    return query
 
 
 
 
 def validate_regex(missing_regex_name:str, record:list, regex_expressions:list,regex_template_records:list, validation = True)->None:
     print('*'*80+"\n {} \n \n CHÝBAJÚCI {}".format(record,missing_regex_name, ))
-    # pyperclip.copy(regex_expressions[missing_regex_name])
+    pyperclip.copy(regex_expressions[missing_regex_name])
     user_input_regex = input("Zadajte nový regex výraz:\n\r")
     
     regex_template_records[missing_regex_name].append(record)
@@ -182,19 +182,23 @@ def validate_regex(missing_regex_name:str, record:list, regex_expressions:list,r
     try:
         i=0
         while i < (len(regex_template_records[missing_regex_name])):
-            query = re.search(user_input_regex, regex_template_records[missing_regex_name][i])
-            query = query.group(0)
+            query = re.findall(user_input_regex, regex_template_records[missing_regex_name][i])
+            query = query[0]
             query = validating_fun(query)
             print('Nájdený parameter pre log {} : {}'.format(i, query))
             i+=1
     except:
-        print("Chyba 114: Neplatný regex.")
-        return validate_regex(missing_regex_name, record, regex_expressions,regex_template_records)
+        print("Chyba 114: Neplatný regex. Preskočiť záznam? (y/n):")
+        if input().lower() != 'y':
+            return validate_regex(missing_regex_name, record, regex_expressions,regex_template_records)
+        else:
+            regex_template_records[missing_regex_name].pop()
+            return None
 
-    if input("Regex výraz je platný. Uložiť? (y/n): ").lower() == 'y':
+    if input("Regex výraz je platný. Uložiť? (y/n): ").lower() != 'n':
         return user_input_regex
     
-    if input("Chcete výraz zadať znova? (y/n): ").lower() == 'y':
+    if input("Chcete výraz zadať znova? (y/n): ").lower() != 'n':
         return validate_regex(missing_regex_name, record, regex_expressions,regex_template_records)
     
     regex_template_records[missing_regex_name].pop()
@@ -220,30 +224,45 @@ def find_pap_regex(record:list)->None:
 
 
 def find_kam_regex(record:list, file:File)->None:
-    #find record creation date
-    query = re.search(regex_expressions['KAM_date'], record)  
     #KAM_date
+    value = None
+    query = re.search(regex_expressions['KAM_date'], record)  
     query = query.group(0).strip()
     query = re.sub(r'\s+', ' ', query)
     query = query.replace('. ', '.')
     for format in ('%d.%m.%Y %H:%M:%S','%m/%d/%Y %H:%M:%S'):
         try:
-            datetime.strptime(query, format)
+            value = datetime.strptime(query, format)
+            print(value)
             break
         except:
             pass
-    raise ValueError('Pre KAM nebol nájdený platný dátum a čas.')
+
+    if value is None:
+        raise ValueError('Pre KAM nebol nájdený platný dátum a čas.')
+    
 
 
-    if query is None:
-        user_input_regex = validate_regex('KAM_date', record, regex_expressions, regex_template_records)
-        if user_input_regex is not None:
-            regex_expressions['KAM_date'] = user_input_regex
-            return None
 
-    query = ''.join(filter(None, query.groups()))
-    query = validating_fun(query)        
-    print(query)
+    #KAM_actor
+    # value = None
+    # query = re.findall(regex_expressions['KAM_actor'], record)
+    # if len(query) == 0 :
+    #     user_input_regex = validate_regex('KAM_actor', record, regex_expressions, regex_template_records)
+    #     if user_input_regex is not None:
+    #         regex_expressions['KAM_actor'] = user_input_regex
+    # else:
+    #     value = ''.join(filter(None, query[0])).strip()
+    #     if value is None:
+    #         raise ValueError('Pre KAM nebol nájdený platný Actor.') 
+
+    # query = validating_fun(query)      
+
+    print(value)
+
+    
+
+
 
 
 
@@ -254,6 +273,8 @@ def find_kam_regex(record:list, file:File)->None:
 
     
 def main(starting_path:str):
+
+    print("Začínam spracovávať súbory v adresári: {}".format(starting_path))
 
     paths=[]
     for root, directories, selected_files in walk(starting_path):
@@ -278,6 +299,8 @@ def main(starting_path:str):
     i=0
     for file in file_object_collection:
         for record in file.getRecords():
+            if any(invalid_expression in  record.lower() for invalid_expression in ['prerušená', 'chyba', 'porušená', 'neplatná', 'error', 'interrupted', ] ):
+                continue
             if 'pap' in  file.getPath().lower():
                 pass
             else:
