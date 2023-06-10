@@ -6,11 +6,11 @@ class File:
         self.records = records
         self.path = path
 
-    def getRecords(self):
+    def get_records(self):
         return self.records
-    def getPath(self):
+    def get_path(self):
         return self.path
-    def getLength(self):
+    def get_length(self):
         return len(self.records)
 
 
@@ -18,7 +18,7 @@ class File:
 class Record:
     def __init__(self) -> None:
         self.HDV = None
-        self.PAP_date = None
+        self.date = None
         self.PAP_time = None
         self.Actor = None
         self.Board = None
@@ -36,46 +36,46 @@ class RecordBuilder :
     def setHDV(self,HDV):
         self.record.HDV = HDV
         return self
-    def setPAP_date(self,PAP_date):
-        self.record.PAP_date = PAP_date
+    def set_date(self,date):
+        self.record.date = date
         return self
-    def setActor(self,actor):
+    def set_actor(self,actor):
         self.record.Actor = actor
         return self
-    def setBoard(self,board_id):
+    def set_board(self,board_id):
         self.record.Board = board_id
         return self
-    def setSoftware(self,software):
+    def set_software(self,software):
         self.record.Software = software
         return self
-    def setChecksum_Flash(self,checksum_Flash):
+    def set_checksum_Flash(self,checksum_Flash):
         self.record.Checksum_Flash = checksum_Flash
         return self
-    def setChecksum_EEPROM(self,checksum_EEPROM):
+    def set_checksum_EEPROM(self,checksum_EEPROM):
         self.record.Checksum_EEPROM = checksum_EEPROM
         return self
-    def setCompilation_timedate(self,compilation_timedate):
+    def set_compilation_timedate(self,compilation_timedate):
         self.record.Compilation_timedate = compilation_timedate
         return self
-    def setContent(self,content):
+    def set_content(self,content):
         self.record.content = content
         return self
-    def setPath(self,path):
+    def set_path(self,path):
         self.record.path = path
         return self
     def build(self):
         return self.record
     
-    def getContent(self):
+    def get_content(self):
         return self.record.content
     
-    def getPath(self):
+    def get_path(self):
         return self.record.path  
     
     def to_dict(self):
         return {
             "HDV": self.record.HDV,
-            "PAP_date": self.record.PAP_date,
+            "date": self.record.date,
             "Actor": self.record.Actor,
             "Board": self.record.Board,
             "Software": self.record.Software,
