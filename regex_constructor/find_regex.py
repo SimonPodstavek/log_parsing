@@ -4,7 +4,7 @@ from os import path, access, R_OK, listdir, walk
 from os.path import abspath, dirname, join, isfile, isdir
 import pickle
 import pyperclip
-from datetime import datetime
+from datetime import datetime, date
 
 sys.path.append('../src')
 from log_classes import File
@@ -37,6 +37,8 @@ with open('regex_constructor/regex_template_records.pickle', 'rb') as file:
 # }
 
 
+
+
 # regex_expressions={
 #     'supported_file_types' : r'.*_PAP_.*\.log',
 #     'SW_version_3G' : r'^[A-Z]{4}_\d$',
@@ -54,8 +56,8 @@ with open('regex_constructor/regex_template_records.pickle', 'rb') as file:
 #     regex_expressions.update({key: '$^'})  
 
 #USE THIS TO MANUALLY ADD OR REMOVE NEW REGEX EXPRESSIONS
-# regex_expressions.pop('Actor')
-# regex_expressions.update({'KAM_actor': '$^'})
+# regex_expressions.pop('M_programmed_configuration')
+regex_template_records.update({'Programmed_configuration': []})
 # regex_template_records.update({'KAM_actor': []})
 
 
@@ -113,10 +115,6 @@ def collect_records_from_files(list_of_files:dict)->tuple:
 
 
 
-
-
-
-
         #if decoding fails, try to decode as windows-1250
         if not file_decoded:
             with open(file, 'r', encoding='windows-1250') as opened_file:
@@ -126,7 +124,6 @@ def collect_records_from_files(list_of_files:dict)->tuple:
                 except:
                     file_decoded = False
             opened_file.close()
-
 
 
 
@@ -166,6 +163,8 @@ def collect_records_from_files(list_of_files:dict)->tuple:
 
 
 def validating_fun(query:str)->None:
+    if query == []:
+        query = '' 
     return query
 
 
@@ -173,9 +172,8 @@ def validating_fun(query:str)->None:
 
 def validate_regex(missing_regex_name:str, record:list, regex_expressions:list,regex_template_records:list, validation = True)->None:
     print('*'*80+"\n {} \n \n CHÝBAJÚCI {}".format(record,missing_regex_name, ))
-    pyperclip.copy(regex_expressions[missing_regex_name])
+    # pyperclip.copy(regex_expressions[missing_regex_name])
     user_input_regex = input("Zadajte nový regex výraz:\n\r")
-    
     regex_template_records[missing_regex_name].append(record)
 
 
@@ -208,7 +206,7 @@ def validate_regex(missing_regex_name:str, record:list, regex_expressions:list,r
 
 
 
-def find_pap_regex(record:list)->None:
+def find_pap_regex(record:list, file:File)->None:
     #find record creation date
     query = re.search(regex_expressions['PAP_date'], record)
     if not query:
@@ -216,7 +214,21 @@ def find_pap_regex(record:list)->None:
         if user_input_regex is not None:
             regex_expressions['PAP_date'] = user_input_regex
 
-    print(query)
+
+    query = query.group(0).strip()
+    query = query.replace('. ', '.')
+    for format in ('%Y.%m.%d %H:%M:%S','%m/%d/%Y %H:%M:%S'):
+        try:
+            value = datetime.strptime(query, format)
+            # print(value)
+            break
+        except:
+            pass
+        
+
+
+    # #find record actor
+    # query = re.findall(regex_expressions['PAP_actor'], record))
 
 
 
@@ -224,6 +236,8 @@ def find_pap_regex(record:list)->None:
 
 
 def find_kam_regex(record:list, file:File)->None:
+    
+    
     #KAM_date
     value = None
     query = re.search(regex_expressions['KAM_date'], record)  
@@ -232,33 +246,68 @@ def find_kam_regex(record:list, file:File)->None:
     query = query.replace('. ', '.')
     for format in ('%d.%m.%Y %H:%M:%S','%m/%d/%Y %H:%M:%S'):
         try:
-            value = datetime.strptime(query, format)
-            print(value)
-            break
+            datem = datetime.strptime(query, format)
+            # print(value)
+            # break
         except:
             pass
 
-    if value is None:
-        raise ValueError('Pre KAM nebol nájdený platný dátum a čas.')
+    # if value is None:
+    #     raise ValueError('Pre KAM nebol nájdený platný dátum a čas.')
     
+    # record_object_collection[record_id].set_date(response)
 
 
-
-    #KAM_actor
-    # value = None
-    # query = re.findall(regex_expressions['KAM_actor'], record)
-    # if len(query) == 0 :
+    # KAM_actor
+    # response = re.findall(regex_expressions['KAM_actor'], record)
+    # if len(response) == 0 :
     #     user_input_regex = validate_regex('KAM_actor', record, regex_expressions, regex_template_records)
     #     if user_input_regex is not None:
     #         regex_expressions['KAM_actor'] = user_input_regex
     # else:
-    #     value = ''.join(filter(None, query[0])).strip()
-    #     if value is None:
+    #     response = ''.join(filter(None, response[0])).strip()
+    #     if '(' not in response:
+    #         response = response.replace(')', '')
+    #     if response is None:
     #         raise ValueError('Pre KAM nebol nájdený platný Actor.') 
 
-    # query = validating_fun(query)      
+    # KAM_HDV
+    # response = re.findall(regex_expressions['HDV'], record)
+    # if len(response) == 0 :
+    #     user_input_regex = validate_regex('HDV', record, regex_expressions, regex_template_records)
+    #     if user_input_regex is not None:
+    #         regex_expressions['HDV'] = user_input_regex
+    # else:
+    #     response = ''.join(filter(None, response[0])).strip()
+    #     if response is None:
+    #         raise ValueError('Pre KAM nebol nájdený platný Actor.') 
+        
+    # KAM_Configuration
+    response = re.findall(regex_expressions['Programmed_configuration'], record)
+    if len(response) == 0 and datetime.date(datem) > date(2014,1,1):
+        pass
+        # user_input_regex = validate_regex('Programmed_configuration', record, regex_expressions, regex_template_records)
+        # if user_input_regex is not None:
+        #     regex_expressions['Programmed_configuration'] = user_input_regex
+            
+    elif datetime.date(datem) > date(2014,1,1):
+        M_response = ''.join(filter(None, response[0])).strip()
+        if M_response is None:
+            raise ValueError('Pre KAM nebola najdena konfiguracia.') 
 
-    print(value)
+        if len(response ) == 2:
+            C_response = ''.join(filter(None, response[1])).strip()
+        else:
+            C_response = M_response
+
+        print(M_response)
+        print(C_response)
+
+# (?:.*Konfigurácia\s*:\s*(.*)\n\r*)
+
+
+        # M_response = validating_fun(response)      
+
 
     
 
@@ -283,13 +332,12 @@ def main(starting_path:str):
                 if re.compile(regex_expressions['any']).search(file) is not None:
                     paths.append(join(root,file))
 
-    global record_paths
     if len(paths) == 0:
         print("Chyba 102: V adresári {} sa nenachádzajú žiadne súbory.".format(starting_path))
         return 102
     
     file_object_collection, failed_files = collect_records_from_files(paths)
-    number_of_records = sum(file.getLength() for file in file_object_collection)
+    number_of_records = sum(file.get_length() for file in file_object_collection)
     print("Počet prečítaných súborov: {} z celkového počtu: {}, úspešnosť: {}%".format(len(paths), failed_files+len(paths), 100*(len(paths)/(failed_files+len(paths)))))
     print("Počet nájdených záznamov (PAP + KAM): {}".format(number_of_records))
 
@@ -298,12 +346,16 @@ def main(starting_path:str):
     # find just first occurence of regex expression
     i=0
     for file in file_object_collection:
-        for record in file.getRecords():
-            if any(invalid_expression in  record.lower() for invalid_expression in ['prerušená', 'chyba', 'porušená', 'neplatná', 'error', 'interrupted', ] ):
+        for record in file.get_records():
+            if any(invalid_expression in  record.lower() for invalid_expression in ['prerušená', 'chyba', 'porušená', 'neplatná', 'error', 'interrupted', 'Consistency of configuration data','broken'] ):
                 continue
-            if 'pap' in  file.getPath().lower():
+            if 'pap' in  file.get_path().lower():
                 pass
+                # find_pap_regex(record, file)
             else:
+                if any(invalid_expression in  record.lower() for invalid_expression in ['------', '———————'] ):
+                    continue
+                # pass
                 find_kam_regex(record, file)
 
 
