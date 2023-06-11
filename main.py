@@ -4,7 +4,7 @@ from os import path, access, R_OK, listdir, walk
 from os.path import abspath, dirname, join, isfile, isdir
 from log_classes import *
 from handle_error import error_handler
-from datetime import datetime
+from datetime import datetime, date
 from pprint import pprint
 import pickle
 from upload_records import upload_records
@@ -144,7 +144,7 @@ def collect_records_from_files(list_of_files:dict)->tuple:
 def create_pap_record_object(record:list, path:str)->None or list:
 
     #Create new empty instance of record class
-    # record_object = RecordBuilder()
+    # record_object = PAPRecordBuilder()
     # record_object.setContent(record)
 
 
@@ -187,10 +187,10 @@ def create_pap_record_object(record:list, path:str)->None or list:
 def create_kam_record_object(record:list, path:str)->None or list:
 
     #Create new empty instance of record class
-    record_object = RecordBuilder()
+    record_object = KAMRecordBuilder()
     record_object.set_content(record)
 
-    #Find KAM date
+    #Find KAM Config date
     parameter_found=False
     try:
         response = re.search(regex_expressions['KAM_date'], record)  
@@ -203,24 +203,24 @@ def create_kam_record_object(record:list, path:str)->None or list:
     for format in ('%d.%m.%Y %H:%M:%S','%m/%d/%Y %H:%M:%S'):
         try:
             response = datetime.strptime(response, format)
-            record_object.set_date(response)
+            record_object.set_config_timedate(response)
             parameter_found=True
             break
         except:
             pass
 
 
-    # if parameter_found == False:
-    #     response = error_handler(record_object, 105,"V zadanom zázname neexistuje dátum a čas. Zadajte dátum a čas v formáte dd.mm.yyyy hh:mm:ss",True, "N/A",re.compile(r'\d{1,2}\.\d{1,2}\.\d{4}\s\d{1,2}:\d{1,2}:\d{1,2}'))
-    #     if response == None:
-    #         return
-    #     elif response == 111:
-    #         return 111
-    #     else:
-    #         response = datetime.strptime(response.strip(), '%d.%m.%Y %H:%M:%S')
-    #         parameter_found=True
+    if parameter_found == False:
+        response = error_handler(record_object, 105,"V zadanom zázname neexistuje dátum a čas. Zadajte dátum a čas v formáte dd.mm.yyyy hh:mm:ss",True, "N/A",re.compile(r'\d{1,2}\.\d{1,2}\.\d{4}\s\d{1,2}:\d{1,2}:\d{1,2}'))
+        if response == None:
+            return
+        elif response == 111:
+            return 111
+        else:
+            response = datetime.strptime(response.strip(), '%d.%m.%Y %H:%M:%S')
+            parameter_found=True
 
-    # record_object.setDate(response)
+    record_object.set_config_timedate(response)
 
 
 
@@ -276,39 +276,84 @@ def create_kam_record_object(record:list, path:str)->None or list:
     # record_object.set_HDV(response)
 
 
-    #Find Configuration (Configuration has been used in the majority of protocols since 2014)
-    parameter_found=False
-    try:
-        if len(response) == 0 and datetime.date(datem) > date(2014,1,1):
-        response = re.findall(regex_expressions['Programmed_configuration'], record)
-        #Select just first matching REGEX group
-        response = ''.join(filter(None, response[0])).strip()
-        #Remove closing parenthesis if they do not match opening parenthesis
-        response = response.strip()
+    #Find KAM Configuration (Configuration has been used in the majority of protocols since 2014)
+    # parameter_found = False
+    # M_response = ''
+    # C_response = ''
+    # try:
+    #     if datetime.date(record_object.get_config_timedate()) > date(2014,1,1):
+    #         response = re.findall(regex_expressions['KAM_configuration'],record)
+    #         M_response = ''.join(filter(None, response[0])).strip()
+    #         if len(response) == 2:
+    #             C_response = ''.join(filter(None, response[1])).strip()
+    #         else:
+    #             C_response = M_response
+    #         parameter_found = True
+    #         print(M_response)
+    #         print(C_response)
+    # except:
+    #     pass
+
+    # if parameter_found == False and datetime.date(record_object.get_config_timedate()) > date(2014,1,1):
+    #     M_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza konfigurácia. Zadajte konfiguráciu pre kanál M",False, "N/A",re.compile(r'.*'))
+    #     C_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza konfigurácia. Zadajte konfiguráciu pre kanál C (Ak je totožna ako kanál M, zadajte \'-\'). ",False, "N/A",re.compile(r'.*'))
+    #     if M_response == None:
+    #         return
+    #     elif M_response == 111:
+    #         return 111
         
-        record_object.set_HDV(response)
-        parameter_found=True
-    except:
-        pass
+    #     if C_response == None:
+    #         return
+    #     elif C_response == 111:
+    #         return 111
+    #     elif C_response == '-':
+    #         C_response = M_response
 
-    if parameter_found == False:
-        response = error_handler(record_object, 105,"V zadanom zázname neexistuje HDV. Zadajte HDV vo formáte XXX-XXX alebo XXXX-XXX",True, "N/A",re.compile(r'.*-.*'))
-        if response == None:
-            return
-        elif response == 111:
-            return 111
-        else:
-            parameter_found=True
+    #     parameter_found=True
+    #     print(M_response)
+    #     print(C_response)
             
-    record_object.set_HDV(response)
+    # record_object.set_M_programmed_configuration(M_response)
+    # record_object.set_C_programmed_configuration(C_response)
     
-    
+    # Find KAM Software
+    # parameter_found = False
+    # try:
+    #     response = re.findall(regex_expressions['KAM_software'],record)
+    #     M_response = ''.join(filter(None, response[0])).strip()
+    #     if len(response) == 2:
+    #         C_response = ''.join(filter(None, response[1])).strip()
+    #     else:
+    #         C_response = M_response
+    #     parameter_found = True
+    #     print(M_response)
+    #     print(C_response)
+    # except:
+    #     pass
+
+    # if parameter_found == False:
+    #     M_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza software. Zadajte konfiguráciu pre kanál M",False, "N/A",re.compile(r'.*'))
+    #     C_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza software. Zadajte konfiguráciu pre kanál C (Ak je totožna ako kanál M, zadajte \'-\'). ",False, "N/A",re.compile(r'.*'))
+    #     if M_response == None:
+    #         return
+    #     elif M_response == 111:
+    #         return 111
+        
+    #     if C_response == None:
+    #         return
+    #     elif C_response == 111:
+    #         return 111
+    #     elif C_response == '-':
+    #         C_response = M_response
+
+    #     parameter_found=True
+    #     print(M_response)
+    #     print(C_response)
+            
+    # record_object.set_M_programmed_software(M_response)
+    # record_object.set_C_programmed_software(C_response)
 
 
-
-
-
-    print(response)
 
     satisfying_records.append(record_object)
 
@@ -460,8 +505,9 @@ def main():
                 # response = create_pap_record_object(record, file)
                 pass
             else:
-                response = create_kam_record_object(record, file)
-                pass
+                if any(invalid_expression in  record.lower() for invalid_expression in ['------', '———————'] ):
+                    continue
+                create_kam_record_object(record, file)
             
             if response == 111:
                 upload_records(satisfying_records,number_of_records)

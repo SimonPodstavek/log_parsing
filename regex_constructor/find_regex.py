@@ -57,8 +57,18 @@ with open('regex_constructor/regex_template_records.pickle', 'rb') as file:
 
 #USE THIS TO MANUALLY ADD OR REMOVE NEW REGEX EXPRESSIONS
 # regex_expressions.pop('M_programmed_configuration')
-# regex_template_records.update({'Programmed_configuration': []})
-# regex_expressions.update({'Programmed_configuration': r'^$'})
+# regex_template_records.update({'KAM_programmed_actor': []})
+# regex_expressions.update({'KAM_programmed_actor': r'^$'})
+
+# with open('regex_constructor/regex_expressions.pickle', 'wb') as file:
+#     if len(regex_expressions) != 0:
+#         pickle.dump(regex_expressions, file)
+#         print('Regex výrazy boli uložené')
+
+# with open('regex_constructor/regex_template_records.pickle', 'wb') as file:
+#     if len(regex_template_records) != 0:
+#         pickle.dump(regex_template_records, file)
+#         print('Zdrojové súbory pre regex boli uložené')
 
 
 def collect_records_from_files(list_of_files:dict)->tuple:
@@ -161,15 +171,6 @@ def collect_records_from_files(list_of_files:dict)->tuple:
 
 
 
-
-def validating_fun(query:str)->None:
-    if query == []:
-        query = '' 
-    return query
-
-
-
-
 def validate_regex(missing_regex_name:str, record:list, regex_expressions:list,regex_template_records:list, validation = True)->None:
     print('*'*80+"\n {} \n \n CHÝBAJÚCI {}".format(record,missing_regex_name, ))
     # pyperclip.copy(regex_expressions[missing_regex_name])
@@ -182,7 +183,6 @@ def validate_regex(missing_regex_name:str, record:list, regex_expressions:list,r
         while i < (len(regex_template_records[missing_regex_name])):
             query = re.findall(user_input_regex, regex_template_records[missing_regex_name][i])
             query = query[0]
-            query = validating_fun(query)
             print('Nájdený parameter pre log {} : {}'.format(i, query))
             i+=1
     except:
@@ -206,29 +206,32 @@ def validate_regex(missing_regex_name:str, record:list, regex_expressions:list,r
 
 
 
-def find_pap_regex(record:list, file:File)->None:
-    #find record creation date
-    query = re.search(regex_expressions['PAP_date'], record)
-    if not query:
-        user_input_regex = validate_regex('PAP_date', record, regex_expressions, regex_template_records)
-        if user_input_regex is not None:
-            regex_expressions['PAP_date'] = user_input_regex
+# def find_pap_regex(record:list, file:File)->None:
+#     #find record creation date
+#     query = re.search(regex_expressions['PAP_date'], record)
+#     if not query:
+#         user_input_regex = validate_regex('PAP_date', record, regex_expressions, regex_template_records)
+#         if user_input_regex is not None:
+#             regex_expressions['PAP_date'] = user_input_regex
 
 
-    query = query.group(0).strip()
-    query = query.replace('. ', '.')
-    for format in ('%Y.%m.%d %H:%M:%S','%m/%d/%Y %H:%M:%S'):
-        try:
-            value = datetime.strptime(query, format)
-            # print(value)
-            break
-        except:
-            pass
+#     query = query.group(0).strip()
+#     query = query.replace('. ', '.')
+#     for format in ('%Y.%m.%d %H:%M:%S','%m/%d/%Y %H:%M:%S'):
+#         try:
+#             value = datetime.strptime(query, format)
+#             # print(value)
+#             break
+#         except:
+#             pass
         
 
 
-    # #find record actor
-    # query = re.findall(regex_expressions['PAP_actor'], record))
+#     # #find record actor
+#     # query = re.findall(regex_expressions['PAP_actor'], record))
+
+
+
 
 
 
@@ -236,8 +239,7 @@ def find_pap_regex(record:list, file:File)->None:
 
 
 def find_kam_regex(record:list, file:File)->None:
-    
-    
+
     #KAM_date
     value = None
     query = re.search(regex_expressions['KAM_date'], record)  
@@ -251,10 +253,8 @@ def find_kam_regex(record:list, file:File)->None:
         except:
             pass
 
-    if value is None:
+    if datem is None:
         raise ValueError('Pre KAM nebol nájdený platný dátum a čas.')
-    
-    record_object.set_date(response)
 
 
     # KAM_actor
@@ -283,18 +283,83 @@ def find_kam_regex(record:list, file:File)->None:
 
         
     # KAM_Configuration
-    response = re.findall(regex_expressions['Programmed_configuration'], record)
-    if len(response) == 0 and datetime.date(datem) > date(2014,1,1):
-        pass
-        # user_input_regex = validate_regex('Programmed_configuration', record, regex_expressions, regex_template_records)
-        # if user_input_regex is not None:
-        #     regex_expressions['Programmed_configuration'] = user_input_regex
+    # response = re.findall(regex_expressions['Programmed_configuration'], record)
+    # if len(response) == 0 and datetime.date(datem) > date(2014,1,1):
+    #     pass
+    #     # user_input_regex = validate_regex('Programmed_configuration', record, regex_expressions, regex_template_records)
+    #     # if user_input_regex is not None:
+    #     #     regex_expressions['Programmed_configuration'] = user_input_regex
             
-    elif datetime.date(datem) > date(2014,1,1):
+    # elif datetime.date(datem) > date(2014,1,1):
+    #     M_response = ''.join(filter(None, response[0])).strip()
+    #     if M_response is None:
+    #         raise ValueError('Pre KAM nebola najdena konfiguracia.') 
+        
+    #     if len(response ) == 2:
+    #         C_response = ''.join(filter(None, response[1])).strip()
+    #     else:
+    #         C_response = M_response
+
+    #     print(M_response)
+    #     print(C_response)
+
+    # KAM_Configuration
+    # response = re.findall(regex_expressions['Programmed_configuration'], record)
+    # if len(response) == 0 and datetime.date(datem) > date(2014,1,1):
+    #     pass
+    #     # user_input_regex = validate_regex('Programmed_configuration', record, regex_expressions, regex_template_records)
+    #     # if user_input_regex is not None:
+    #     #     regex_expressions['Programmed_configuration'] = user_input_regex
+            
+    # elif datetime.date(datem) > date(2014,1,1):
+    #     M_response = ''.join(filter(None, response[0])).strip()
+    #     if M_response is None:
+    #         raise ValueError('Pre KAM nebola najdena konfiguracia.') 
+        
+    #     if len(response ) == 2:
+    #         C_response = ''.join(filter(None, response[1])).strip()
+    #     else:
+    #         C_response = M_response
+
+    #     print(M_response)
+    #     print(C_response)
+
+
+    # KAM software
+    # response = re.findall(regex_expressions['KAM_software'], record)
+    # if len(response) == 0:
+    #     # pass
+    #     user_input_regex = validate_regex('KAM_software', record, regex_expressions, regex_template_records)
+    #     if user_input_regex is not None:
+    #         regex_expressions['KAM_software'] = user_input_regex
+            
+    # else:
+    #     M_response = ''.join(filter(None, response[0])).strip()
+    #     if M_response is None:
+    #         raise ValueError('Pre KAM nebol nájdený software') 
+        
+    #     if len(response ) == 2:
+    #         C_response = ''.join(filter(None, response[1])).strip()
+    #     else:
+    #         C_response = M_response
+
+    #     print(M_response)
+    #     print(C_response)
+
+
+    # KAM programmed actor software
+    response = re.findall(regex_expressions['KAM_programmed_actor'], record)
+    if len(response) == 0:
+        # pass
+        user_input_regex = validate_regex('KAM_programmed_actor', record, regex_expressions, regex_template_records)
+        if user_input_regex is not None:
+            regex_expressions['KAM_programmed_actor'] = user_input_regex
+            
+    else:
         M_response = ''.join(filter(None, response[0])).strip()
         if M_response is None:
-            raise ValueError('Pre KAM nebola najdena konfiguracia.') 
-
+            raise ValueError('Pre KAM nebol nájdený actor programovania') 
+        
         if len(response ) == 2:
             C_response = ''.join(filter(None, response[1])).strip()
         else:
@@ -302,20 +367,7 @@ def find_kam_regex(record:list, file:File)->None:
 
         print(M_response)
         print(C_response)
-
-
-
-        # M_response = validating_fun(response)      
-
-
-    
-
-
-
-
-
-
-
+   
 
 
 
