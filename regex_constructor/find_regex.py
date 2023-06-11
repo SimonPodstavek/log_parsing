@@ -37,8 +37,6 @@ with open('regex_constructor/regex_template_records.pickle', 'rb') as file:
 # }
 
 
-
-
 # regex_expressions={
 #     'supported_file_types' : r'.*_PAP_.*\.log',
 #     'SW_version_3G' : r'^[A-Z]{4}_\d$',
@@ -57,18 +55,18 @@ with open('regex_constructor/regex_template_records.pickle', 'rb') as file:
 
 #USE THIS TO MANUALLY ADD OR REMOVE NEW REGEX EXPRESSIONS
 # regex_expressions.pop('M_programmed_configuration')
-# regex_template_records.update({'KAM_programmed_actor': []})
-# regex_expressions.update({'KAM_programmed_actor': r'^$'})
+regex_template_records.update({'KAM_programmed_date': []})
+regex_expressions.update({'KAM_programmed_date': r'^$'})
 
-# with open('regex_constructor/regex_expressions.pickle', 'wb') as file:
-#     if len(regex_expressions) != 0:
-#         pickle.dump(regex_expressions, file)
-#         print('Regex výrazy boli uložené')
+with open('regex_constructor/regex_expressions.pickle', 'wb') as file:
+    if len(regex_expressions) != 0:
+        pickle.dump(regex_expressions, file)
+        print('Regex výrazy boli uložené')
 
-# with open('regex_constructor/regex_template_records.pickle', 'wb') as file:
-#     if len(regex_template_records) != 0:
-#         pickle.dump(regex_template_records, file)
-#         print('Zdrojové súbory pre regex boli uložené')
+with open('regex_constructor/regex_template_records.pickle', 'wb') as file:
+    if len(regex_template_records) != 0:
+        pickle.dump(regex_template_records, file)
+        print('Zdrojové súbory pre regex boli uložené')
 
 
 def collect_records_from_files(list_of_files:dict)->tuple:
@@ -347,18 +345,62 @@ def find_kam_regex(record:list, file:File)->None:
     #     print(C_response)
 
 
-    # KAM programmed actor software
-    response = re.findall(regex_expressions['KAM_programmed_actor'], record)
-    if len(response) == 0:
-        # pass
-        user_input_regex = validate_regex('KAM_programmed_actor', record, regex_expressions, regex_template_records)
-        if user_input_regex is not None:
-            regex_expressions['KAM_programmed_actor'] = user_input_regex
+    # # KAM programmed actor software
+    # response = re.findall(regex_expressions['KAM_programmed_actor'], record)
+    # if len(response) == 0:
+    #     # pass
+    #     user_input_regex = validate_regex('KAM_programmed_actor', record, regex_expressions, regex_template_records)
+    #     if user_input_regex is not None:
+    #         regex_expressions['KAM_programmed_actor'] = user_input_regex
             
-    else:
+    # else:
+    #     M_response = ''.join(filter(None, response[0])).strip()
+    #     if M_response is None:
+    #         raise ValueError('Pre KAM nebol nájdený actor programovania') 
+        
+    #     if len(response ) == 2:
+    #         C_response = ''.join(filter(None, response[1])).strip()
+    #     else:
+    #         C_response = M_response
+
+    #     print(M_response)
+    #     print(C_response)
+
+
+    
+    # KAM board number
+    # response = re.findall(regex_expressions['KAM_board_number'], record)
+    # if len(response) == 0:
+    #     # pass
+    #     user_input_regex = validate_regex('KAM_board_number', record, regex_expressions, regex_template_records)
+    #     if user_input_regex is not None:
+    #         regex_expressions['KAM_board_number'] = user_input_regex
+            
+    # else:
+    #     M_response = ''.join(filter(None, response[0])).strip()
+    #     if M_response is None:
+    #         raise ValueError('Pre KAM nebolo nájdené číslo dosky') 
+        
+    #     if len(response ) == 2:
+    #         C_response = ''.join(filter(None, response[1])).strip()
+    #     else:
+    #         C_response = M_response
+
+    #     print(M_response)
+    #     print(C_response)
+   
+    # KAM functionality
+    response = re.findall(regex_expressions['KAM_functionality'], record)
+    if len(response) == 0 and datetime.date(datem) > date(2015,1,1):
+        pass
+        user_input_regex = validate_regex('KAM_functionality', record, regex_expressions, regex_template_records)
+        if user_input_regex is not None:
+            regex_expressions['KAM_functionality'] = user_input_regex
+            
+    elif datetime.date(datem) > date(2015,1,1):
         M_response = ''.join(filter(None, response[0])).strip()
         if M_response is None:
-            raise ValueError('Pre KAM nebol nájdený actor programovania') 
+            raise ValueError('Pre KAM nebola nájdená funkcionalita') 
         
         if len(response ) == 2:
             C_response = ''.join(filter(None, response[1])).strip()
@@ -367,7 +409,6 @@ def find_kam_regex(record:list, file:File)->None:
 
         print(M_response)
         print(C_response)
-   
 
 
 

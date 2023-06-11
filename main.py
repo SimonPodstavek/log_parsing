@@ -332,8 +332,8 @@ def create_kam_record_object(record:list, path:str)->None or list:
     #     pass
 
     # if parameter_found == False:
-    #     M_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza software. Zadajte konfiguráciu pre kanál M",False, "N/A",re.compile(r'.*'))
-    #     C_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza software. Zadajte konfiguráciu pre kanál C (Ak je totožna ako kanál M, zadajte \'-\'). ",False, "N/A",re.compile(r'.*'))
+    #     M_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza konfigurácia. Zadajte konfiguráciu pre kanál M",False, "N/A",re.compile(r'.*'))
+    #     C_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza konfigurácia. Zadajte konfiguráciu pre kanál C (Ak je totožna ako kanál M, zadajte \'-\'). ",False, "N/A",re.compile(r'.*'))
     #     if M_response == None:
     #         return
     #     elif M_response == 111:
@@ -352,6 +352,105 @@ def create_kam_record_object(record:list, path:str)->None or list:
             
     # record_object.set_M_programmed_software(M_response)
     # record_object.set_C_programmed_software(C_response)
+
+    # # Find KAM programmed actor
+    # parameter_found = False
+    # try:
+    #     response = re.findall(regex_expressions['KAM_programmed_actor'],record)
+    #     M_response = ''.join(filter(None, response[0])).strip()
+    #     if len(response) == 2:
+    #         C_response = ''.join(filter(None, response[1])).strip()
+    #     else:
+    #         C_response = M_response
+    #     parameter_found = True
+    #     print(M_response)
+    #     print(C_response)
+    # except:
+    #     pass
+
+    # if parameter_found == False:
+    #     M_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza účastník progranovania (Actor). Zadajte Actor pre kanál M",False, "N/A",re.compile(r'.*'))
+    #     C_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza účastník progranovania (Actor). Zadajte Actor pre kanál C (Ak je totožný ako kanál M, zadajte \'-\'). ",False, "N/A",re.compile(r'.*'))
+    #     if M_response == None:
+    #         return
+    #     elif M_response == 111:
+    #         return 111
+        
+    #     if C_response == None:
+    #         return
+    #     elif C_response == 111:
+    #         return 111
+    #     elif C_response == '-':
+    #         C_response = M_response
+
+    #     parameter_found=True
+    #     print(M_response)
+    #     print(C_response)
+            
+    # record_object.set_M_programmed_actor(M_response)
+    # record_object.set_C_programmed_actor(C_response)
+
+
+    # Find KAM board number
+    # parameter_found = False
+    # try:
+    #     response = re.findall(regex_expressions['KAM_board_number'],record)
+    #     M_response = ''.join(filter(None, response[0])).strip()
+    #     if len(response) == 2:
+    #         C_response = ''.join(filter(None, response[1])).strip()
+    #     else:
+    #         C_response = M_response
+    #     parameter_found = True
+    #     print(M_response)
+    #     print(C_response)
+    # except:
+    #     pass
+
+    # if parameter_found == False:
+    #     M_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza číslo dosky. Zadajte číslo dosky pre kanál M",False, "N/A",re.compile(r'.*'))
+    #     C_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza číslo dosky. Zadajte číslo dosky pre kanál C (Ak je totožný ako kanál M, zadajte \'-\'). ",False, "N/A",re.compile(r'.*'))
+    #     if M_response == None:
+    #         return
+    #     elif M_response == 111:
+    #         return 111
+        
+    #     if C_response == None:
+    #         return
+    #     elif C_response == 111:
+    #         return 111
+    #     elif C_response == '-':
+    #         C_response = M_response
+
+    #     parameter_found=True
+    #     print(M_response)
+    #     print(C_response)
+            
+    # record_object.set_M_programmed_board(M_response)
+    # record_object.set_C_programmed_board(C_response)
+
+
+
+    #Find KAM Functionality (Functionality has been used in some of protocols since 2014)
+    parameter_found = False
+    M_response = ''
+    C_response = ''
+    try:
+        if datetime.date(record_object.get_config_timedate()) > date(2014,1,1):
+            response = re.findall(regex_expressions['KAM_functionality'],record)
+            M_response = ''.join(filter(None, response[0])).strip()
+            if len(response) == 2:
+                C_response = ''.join(filter(None, response[1])).strip()
+            else:
+                C_response = M_response
+            parameter_found = True
+            print(M_response)
+            print(C_response)
+    except:
+        pass
+            
+    record_object.set_M_programmed_functionality(M_response)
+    record_object.set_C_programmed_functionality(C_response)
+
 
 
 
