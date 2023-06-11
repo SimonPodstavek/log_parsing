@@ -57,8 +57,8 @@ with open('regex_constructor/regex_template_records.pickle', 'rb') as file:
 
 #USE THIS TO MANUALLY ADD OR REMOVE NEW REGEX EXPRESSIONS
 # regex_expressions.pop('M_programmed_configuration')
-regex_template_records.update({'Programmed_configuration': []})
-# regex_template_records.update({'KAM_actor': []})
+# regex_template_records.update({'Programmed_configuration': []})
+# regex_expressions.update({'Programmed_configuration': r'^$'})
 
 
 def collect_records_from_files(list_of_files:dict)->tuple:
@@ -247,15 +247,14 @@ def find_kam_regex(record:list, file:File)->None:
     for format in ('%d.%m.%Y %H:%M:%S','%m/%d/%Y %H:%M:%S'):
         try:
             datem = datetime.strptime(query, format)
-            # print(value)
-            # break
+            break
         except:
             pass
 
-    # if value is None:
-    #     raise ValueError('Pre KAM nebol nájdený platný dátum a čas.')
+    if value is None:
+        raise ValueError('Pre KAM nebol nájdený platný dátum a čas.')
     
-    # record_object_collection[record_id].set_date(response)
+    record_object.set_date(response)
 
 
     # KAM_actor
@@ -281,6 +280,7 @@ def find_kam_regex(record:list, file:File)->None:
     #     response = ''.join(filter(None, response[0])).strip()
     #     if response is None:
     #         raise ValueError('Pre KAM nebol nájdený platný Actor.') 
+
         
     # KAM_Configuration
     response = re.findall(regex_expressions['Programmed_configuration'], record)
@@ -303,7 +303,6 @@ def find_kam_regex(record:list, file:File)->None:
         print(M_response)
         print(C_response)
 
-# (?:.*Konfigurácia\s*:\s*(.*)\n\r*)
 
 
         # M_response = validating_fun(response)      

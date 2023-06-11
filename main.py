@@ -6,13 +6,14 @@ from log_classes import *
 from handle_error import error_handler
 from datetime import datetime
 from pprint import pprint
+import pickle
 from upload_records import upload_records
 
 
 
-global record_object_collection
+# global record_object_collection
 
-satisfying_records,record_object_collection=[],[]
+satisfying_records=[]
 
 regex_expressions = {
     'supported_file_types' : re.compile(r'.*_PAP_.*\.log'),
@@ -27,8 +28,15 @@ regex_expressions = {
     'any' : re.compile(r'')
 }
 
+with open('regex_constructor/regex_expressions.pickle', 'rb') as file:
+    regex_expressions = pickle.load(file)
+    for key in regex_expressions.keys():
+        regex_expressions[key] = re.compile(regex_expressions[key])
+
+
 
 def collect_records_from_files(list_of_files:dict)->tuple:
+    failed_files_counter = 0
     log_contents,valid_files,records_list,file_object_collection = [],[],[],[]
 
     #log_contents -> list of strings, each string is contents of a file
@@ -59,153 +67,362 @@ def collect_records_from_files(list_of_files:dict)->tuple:
         sys.exit(102)
 
     #Read contents of all valid files
-    for _, file in enumerate(valid_files):
-        #open file and decode contents
-        with open(file, 'rb') as log:
-            log=log.read()
+    for i, file in enumerate(valid_files):
 
+        file_decoded=False
+        with open(file, 'rb') as opened_file:
             try:
+                #open file and try to decode its contents as UTF-16 or UTF-8
+                log=opened_file.read()
                 if log[0] == 255:
-                    log=log.decode('utf-16')
+                    log = log.decode('utf-16')
+                
                 else:     
-                        log=log.decode('utf-8-sig')
+                    log = log.decode('utf-8-sig')
+
+                file_decoded = True
+
             except:
-                print("Chyba 112: Pre súbor {} nebolo nájdené podporované enkódovanie. FILE_SKIPPED".format(file))
-                continue
+                file_decoded = False
+        opened_file.close()
+
+
+
+        #if decoding fails, try to decode as windows-1250
+        if not file_decoded:
+            with open(file, 'r', encoding='windows-1250') as opened_file:
+                try:
+                    log = opened_file.read()
+                    file_decoded = True
+                except:
+                    file_decoded = False
+            opened_file.close()
+
+
+
+        if not file_decoded:
+            print("Chyba 112: Pre súbor {} nebolo nájdené podporované enkódovanie. FILE_SKIPPED".format(file))
+            failed_files_counter+=1
+            continue
         
-        log_contents.append(log.strip())
-        
-    #Split contents of each file into individual records
-        if re.compile(r'.*PAP.*\.log').search(file):
-            records_list=log_contents[_].split('-'*80)
+        log_contents = log.strip()
+    
+        #the following regex expressions are used to determine the type of log file
+        #after the type is determined, the contents of the file are split into individual records, removing separators, keeping log header
+
+        #PAP log
+        if re.compile(r'.*pap.*\.(log|txt)').search(file.lower()):
+            records_list=log_contents.split('-'*80)
+
+        #KAM log or kamw log
+        elif re.compile(r'.*kam.*\.(log|txt)').search(file.lower()):
+            records_list = re.findall(r'#{60}\r?\n(.*)\r?\n#{60}([^#]*)',log_contents)
+            records_list = [''.join(x) for x in records_list]
+                
         else:
-            print("Chyba 113: Súbor {} nie je log typu PAP. FILE_SKIPPED".format(file))
+            print("Chyba 113: Súbor {} nie je log typu KAM, kamw ani PAP. FILE_SKIPPED".format(file))
+            failed_files_counter+=1
             continue
 
         #Remove double new lines and empty records
         records_list=[re.sub(regex_expressions['double_new_line_remove'], '\n', x).strip() for x in records_list]
+        #Remove empty records
         records_list=list(filter(bool,records_list))
+        #Remove records that are shorter than 151 characters
+        records_list = [x for x in records_list if len(x.strip()) > 150] 
+        
         file_object_collection.append(File(records_list, file))
-    return file_object_collection
 
 
-def extract_function(record:str) -> str:
-    raise('Not implemented yet')
-
-def extract_actor_SW_Date_and_Board(record:str) -> tuple:
-    raise('Not implemented yet')
+    return file_object_collection, failed_files_counter
 
 
-def extract_2G_parameters(record_id:int,version_row:str) -> tuple:
-
-    version = re.search(regex_expressions['SW_version_2G'], version_row)
-    if version is None:
-        response = error_handler(record_object_collection, record_id,  106,"Prečítaná verzia SW nespĺňa kritéria pre SW ver. 2G",True,version_row, regex_expressions['SW_version_2G'])
-        if response == None or response == 111:
-            return
-        elif response == 111:
-            return 111
-
-    return (version.group(0))
 
 
-def create_record_object(record:str, path:str) -> None or list:
+
+
+def create_pap_record_object(record:list, path:str)->None or list:
+
     #Create new empty instance of record class
-    record_object_collection.append(RecordBuilder())
-    record_id=len(record_object_collection)-1
+    # record_object = RecordBuilder()
+    # record_object.setContent(record)
 
-    record_object_collection[record_id].setContent(record)
 
-    #check if version is compatible with the script
-    version_row = re.search(regex_expressions['software_version'], record)
-    if version_row is not None:
-        version_row=version_row.group(1)
-    
-    if version_row is None:
-        response=error_handler(record_object_collection, record_id, 105,"V zadanom zázname neexistuje verzia",True, "N/A",regex_expressions['any_software_version'])
-        if response == None:
-            return
-        elif response == 111:
-            return 111
+    # parameter_found=False
+    # try:
+    #     response = re.search(regex_expressions['PAP_date'], record)
+    #     response = response.group(0).strip()
+    #     response = response.replace('. ', '.')
+    # except:
+    #     pass
 
-        record_object_collection[record_id].setSoftware(response)
-    elif re.search(regex_expressions['SW_version_2G'], version_row) is not None:
-        response=extract_2G_parameters(record_id,version_row)
-        if response == None:
-            return
-        record_object_collection[record_id].setSoftware(response)
-    elif re.search(regex_expressions['SW_version_3G'], version_row) is not None:
-        print("3G SW")
-        return 
-    else:
-        version=error_handler(record_object_collection, record_id, 106,"Zadaná verzia nespĺňa kritéria pre SW ver. 2G ani 3G",True,version_row, regex_expressions['any_software_version'])
-        if version == None:
-            return
-        elif response == 111:
-            return 111
-        record_object_collection[record_id].setSoftware(response)
-    
+    # for format in ('%Y.%m.%d %H:%M:%S','%Y.%m.%d %H:%M:%S;','%m/%d/%Y %H:%M:%S'):
+    #     try:
+    #         response = datetime.strptime(response, format)
+    #         record_object.set_date(response)
+    #         parameter_found=True
+    #         break
+    #     except:
+    #         pass
 
-    safebytes=[]
-    safebytes=re.search(regex_expressions['safebytes'], record)
-    if safebytes is None:
-        safebytes=error_handler(record_object_collection, record_id, 108,"V zázname neboli nájdené safe bytes",True, "N/A",regex_expressions['safebytes_repair'])
-        if safebytes == None:
-            return
-        elif response == 111:
-            return 111
-    else:
-        safebytes=safebytes.group(1).split()
-    
+    # if parameter_found == False:
+    #         response = error_handler(record_object, 105,"V zadanom zázname neexistuje dátum a čas. Zadajte dátum a čas v formáte dd.mm.yyyy hh:mm:ss",True, "N/A",re.compile(r'\d{1,2}\.\d{1,2}\.\d{4}\s\d{1,2}:\d{1,2}:\d{1,2}'))
+    #         if response == None:
+    #             return
+    #         elif response == 111:
+    #             return 111
+    #         else:
+    #             response = datetime.strptime(response, '%d.%m.%Y %H:%M:%S')
+    #             parameter_found=True
 
-    if safebytes[12] != "01" :
+    # record_object.set_date(response)
+    # satisfying_records.append(record_object)
+
+    return None
+
+
+
+
+
+def create_kam_record_object(record:list, path:str)->None or list:
+
+    #Create new empty instance of record class
+    record_object = RecordBuilder()
+    record_object.set_content(record)
+
+    #Find KAM date
+    parameter_found=False
+    try:
+        response = re.search(regex_expressions['KAM_date'], record)  
+        response = response.group(0).strip()
+        response = re.sub(r'\s+', ' ', response)
+        response = response.replace('. ', '.')
+    except:
         pass
 
+    for format in ('%d.%m.%Y %H:%M:%S','%m/%d/%Y %H:%M:%S'):
+        try:
+            response = datetime.strptime(response, format)
+            record_object.set_date(response)
+            parameter_found=True
+            break
+        except:
+            pass
 
 
-    #Get first line and split it by ; and assign it to Record instance
-    programmed_time_and_date = record.split(';')[0]
-    original_date_format = datetime.strptime(programmed_time_and_date, '%Y.%m.%d %H:%M:%S')
-    record_object_collection[record_id].setPAP_date(datetime.strftime(original_date_format, '%Y-%m-%d %H:%M:%S'))
+    # if parameter_found == False:
+    #     response = error_handler(record_object, 105,"V zadanom zázname neexistuje dátum a čas. Zadajte dátum a čas v formáte dd.mm.yyyy hh:mm:ss",True, "N/A",re.compile(r'\d{1,2}\.\d{1,2}\.\d{4}\s\d{1,2}:\d{1,2}:\d{1,2}'))
+    #     if response == None:
+    #         return
+    #     elif response == 111:
+    #         return 111
+    #     else:
+    #         response = datetime.strptime(response.strip(), '%d.%m.%Y %H:%M:%S')
+    #         parameter_found=True
 
-    #DO NOT APPLY TO VERSION 2.0 and aboove
-    # Delete 0x from the beginning of the string on positions 4-6 and reverse the string to get HDV. Assign HDV to Record instance
-
-    # HDV=([x for x in safebytes[7:4:-1]] )
-    # record_object_collection[record_id].setHDV(''.join(HDV))
-
-    actor_id=([x for x in safebytes[9:7:-1]] )
-    actor_id.insert(0,'0x')
-    record_object_collection[record_id].setActor(int(''.join(actor_id),16))
+    # record_object.setDate(response)
 
 
 
-    board_id=([x for x in safebytes[4:1:-1]] )
-    board_id.insert(0,'0x')
-    board_id=int(''.join(board_id),16)
-    required_length=8
-    number_of_zeros=required_length-len(str(board_id))
-    board_id=''.join(['V','0'*number_of_zeros,str(board_id)])
-    record_object_collection[record_id].setBoard(board_id)
+    #Find Actor name
+    # parameter_found=False
+    # try:
+    #     response = re.findall(regex_expressions['KAM_actor'], record)
+    #     #Select just first matching REGEX group
+    #     response = ''.join(filter(None, response[0])).strip()
+    #     #Remove closing parenthesis if they do not match opening parenthesis
+    #     if '(' not in response:
+    #         response = response.replace(')', '')
+        
+    #     record_object.set_date(response)
+    #     parameter_found=True
+    # except:
+    #     pass
 
-    chsumFlash=''.join(['0x',safebytes[0]])
-    record_object_collection[record_id].setChecksum_Flash(chsumFlash)
+    # if parameter_found == False:
+    #     response = error_handler(record_object, 105,"V zadanom zázname neexistuje Actor. Zadajte meno Actor-a",True, "N/A",re.compile(r'.*'))
+    #     if response == None:
+    #         return
+    #     elif response == 111:
+    #         return 111
+    #     else:
+    #         parameter_found=True
+            
+    # record_object.setActor(response)
+
+    #Find HDV (Locomotive ID)
+    # parameter_found=False
+    # try:
+    #     response = re.findall(regex_expressions['HDV'], record)
+    #     #Select just first matching REGEX group
+    #     response = ''.join(filter(None, response[0])).strip()
+    #     #Remove closing parenthesis if they do not match opening parenthesis
+    #     response = response.strip()
+        
+    #     record_object.set_HDV(response)
+    #     parameter_found=True
+    # except:
+    #     pass
+
+    # if parameter_found == False:
+    #     response = error_handler(record_object, 105,"V zadanom zázname neexistuje HDV. Zadajte HDV vo formáte XXX-XXX alebo XXXX-XXX",True, "N/A",re.compile(r'.*-.*'))
+    #     if response == None:
+    #         return
+    #     elif response == 111:
+    #         return 111
+    #     else:
+    #         parameter_found=True
+            
+    # record_object.set_HDV(response)
+
+
+    #Find Configuration (Configuration has been used in the majority of protocols since 2014)
+    parameter_found=False
+    try:
+        if len(response) == 0 and datetime.date(datem) > date(2014,1,1):
+        response = re.findall(regex_expressions['Programmed_configuration'], record)
+        #Select just first matching REGEX group
+        response = ''.join(filter(None, response[0])).strip()
+        #Remove closing parenthesis if they do not match opening parenthesis
+        response = response.strip()
+        
+        record_object.set_HDV(response)
+        parameter_found=True
+    except:
+        pass
+
+    if parameter_found == False:
+        response = error_handler(record_object, 105,"V zadanom zázname neexistuje HDV. Zadajte HDV vo formáte XXX-XXX alebo XXXX-XXX",True, "N/A",re.compile(r'.*-.*'))
+        if response == None:
+            return
+        elif response == 111:
+            return 111
+        else:
+            parameter_found=True
+            
+    record_object.set_HDV(response)
     
-    chsumEEPROM=''.join(['0x',safebytes[1]])
-    record_object_collection[record_id].setChecksum_EEPROM(chsumEEPROM)
+    
 
 
-    query=re.search(regex_expressions['hex_date'], record)
-    if query is None:
-        return 0
 
-    old_compiled_date=datetime.strptime(query.group(1), '%Y.%m.%d.')
 
-    record_object_collection[record_id].setCompilation_timedate(datetime.strftime(old_compiled_date, "%Y-%m-%d"))
 
-    record_object_collection[record_id].setPath('/'.join(path.lower().split('\\')[-3:]))
+    print(response)
 
-    satisfying_records.append(record_object_collection[record_id])
+    satisfying_records.append(record_object)
+
+
+    return None
+
+
+        
+
+
+
+
+
+
+
+
+
+# def create_record_object(record:str, path:str) -> None or list:
+#     #Create new empty instance of record class
+#     record_object_collection.append(RecordBuilder())
+#     record_id=len(record_object_collection)-1
+
+#     record_object_collection[record_id].setContent(record)
+
+#     #check if version is compatible with the script
+#     version_row = re.search(regex_expressions['software_version'], record)
+#     if version_row is not None:
+#         version_row=version_row.group(1)
+    
+#     if version_row is None:
+#         response=error_handler(record_object_collection, record_id, 105,"V zadanom zázname neexistuje verzia",True, "N/A",regex_expressions['any_software_version'])
+#         if response == None:
+#             return
+#         elif response == 111:
+#             return 111
+
+#         record_object_collection[record_id].setSoftware(response)
+#     elif re.search(regex_expressions['SW_version_2G'], version_row) is not None:
+#         response=extract_2G_parameters(record_id,version_row)
+#         if response == None:
+#             return
+#         record_object_collection[record_id].setSoftware(response)
+#     elif re.search(regex_expressions['SW_version_3G'], version_row) is not None:
+#         print("3G SW")
+#         return 
+#     else:
+#         version=error_handler(record_object_collection, record_id, 106,"Zadaná verzia nespĺňa kritéria pre SW ver. 2G ani 3G",True,version_row, regex_expressions['any_software_version'])
+#         if version == None:
+#             return
+#         elif response == 111:
+#             return 111
+#         record_object_collection[record_id].setSoftware(response)
+    
+
+#     safebytes=[]
+#     safebytes=re.search(regex_expressions['safebytes'], record)
+#     if safebytes is None:
+#         safebytes=error_handler(record_object_collection, record_id, 108,"V zázname neboli nájdené safe bytes",True, "N/A",regex_expressions['safebytes_repair'])
+#         if safebytes == None:
+#             return
+#         elif response == 111:
+#             return 111
+#     else:
+#         safebytes=safebytes.group(1).split()
+    
+
+#     if safebytes[12] != "01" :
+#         pass
+
+
+
+#     #Get first line and split it by ; and assign it to Record instance
+#     programmed_time_and_date = record.split(';')[0]
+#     original_date_format = datetime.strptime(programmed_time_and_date, '%Y.%m.%d %H:%M:%S')
+#     record_object_collection[record_id].setPAP_date(datetime.strftime(original_date_format, '%Y-%m-%d %H:%M:%S'))
+
+#     #DO NOT APPLY TO VERSION 2.0 and aboove
+#     # Delete 0x from the beginning of the string on positions 4-6 and reverse the string to get HDV. Assign HDV to Record instance
+
+#     # HDV=([x for x in safebytes[7:4:-1]] )
+#     # record_object_collection[record_id].setHDV(''.join(HDV))
+
+#     actor_id=([x for x in safebytes[9:7:-1]] )
+#     actor_id.insert(0,'0x')
+#     record_object_collection[record_id].setActor(int(''.join(actor_id),16))
+
+
+
+#     board_id=([x for x in safebytes[4:1:-1]] )
+#     board_id.insert(0,'0x')
+#     board_id=int(''.join(board_id),16)
+#     required_length=8
+#     number_of_zeros=required_length-len(str(board_id))
+#     board_id=''.join(['V','0'*number_of_zeros,str(board_id)])
+#     record_object_collection[record_id].setBoard(board_id)
+
+#     chsumFlash=''.join(['0x',safebytes[0]])
+#     record_object_collection[record_id].setChecksum_Flash(chsumFlash)
+    
+#     chsumEEPROM=''.join(['0x',safebytes[1]])
+#     record_object_collection[record_id].setChecksum_EEPROM(chsumEEPROM)
+
+
+#     query=re.search(regex_expressions['hex_date'], record)
+#     if query is None:
+#         return 0
+
+#     old_compiled_date=datetime.strptime(query.group(1), '%Y.%m.%d.')
+
+#     record_object_collection[record_id].setCompilation_timedate(datetime.strftime(old_compiled_date, "%Y-%m-%d"))
+
+#     record_object_collection[record_id].setPath('/'.join(path.lower().split('\\')[-3:]))
+
+#     satisfying_records.append(record_object_collection[record_id])
 
 
 
@@ -214,28 +431,42 @@ def create_record_object(record:str, path:str) -> None or list:
 
 def main():
 
-    starting_path = abspath(join(dirname(__file__), '../data/operation logs/operational/2023'))
+    starting_path = abspath(join(dirname(__file__), '../data/operation logs/'))
+    print("Začínam spracovávať súbory v adresári: {}".format(starting_path))
     paths=[]
     for root, directories, selected_files in walk(starting_path):
         if len(selected_files) != 0:
             for i, file in enumerate(selected_files):
-                if regex_expressions['supported_file_types'].search(file) is not None:
+                if regex_expressions['any'].search(file) is not None:
                     paths.append(join(root,file))
 
+    if len(paths) == 0:
+        print("Chyba 102: V adresári {} sa nenachádzajú žiadne súbory.".format(starting_path))
+        return 102
 
-    records_of_files = collect_records_from_files(paths)
-    number_of_records = sum(file.getLength() for file in records_of_files)
-    print(number_of_records)
-    immediate_upload=False
-    for file in records_of_files:
-        path = file.getPath()
-        for record in file.getRecords():
-            if create_record_object(record,path) == 111:
-                immediate_upload=True
+    file_object_collection, failed_files = collect_records_from_files(paths)
+    number_of_records = sum(file.get_length() for file in file_object_collection)
+    print("Počet prečítaných súborov: {} z celkového počtu: {}, úspešnosť: {}%".format(len(paths), failed_files+len(paths), 100*(len(paths)/(failed_files+len(paths)))))
+    print("Počet nájdených záznamov (PAP + KAM): {}".format(number_of_records))    
+
+    i=0
+
+    for file in file_object_collection:
+        for record in file.get_records():
+            response = None
+            if any(invalid_expression in  record.lower() for invalid_expression in ['prerušená', 'chyba', 'porušená', 'neplatná', 'error', 'interrupted'] ):
+                continue
+            if 'pap' in  file.get_path().lower():
+                # response = create_pap_record_object(record, file)
+                pass
+            else:
+                response = create_kam_record_object(record, file)
+                pass
+            
+            if response == 111:
+                upload_records(satisfying_records,number_of_records)
                 break
-
-        if immediate_upload == True:
-            break
+            
     upload_records(satisfying_records,number_of_records)
 
 if __name__ == '__main__':

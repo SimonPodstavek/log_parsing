@@ -20,12 +20,26 @@ class Record:
         self.HDV = None
         self.date = None
         self.PAP_time = None
-        self.Actor = None
-        self.Board = None
-        self.Software = None
-        self.Checksum_Flash = None
-        self.Checksum_EEPROM = None
-        self.Compilation_timedate = None
+        self.actor = None
+        self.board = None
+        self.software = None
+        self.checksum_Flash = None
+        self.checksum_EEPROM = None
+        self.compilation_timedate = None
+        self.spare_part = None
+        self.config_timedate = None
+        self.M_programmed_date = None
+        self.M_programmed_actor = None
+        self.M_programmed_software = None
+        self.M_programmed_board = None
+        self.M_programmed_functionality = None
+        self.M_programmed_configuration = None
+        self.C_programmed_date = None
+        self.C_programmed_actor = None
+        self.C_programmed_software = None
+        self.C_programmed_board = None
+        self.C_programmed_functionality = None
+        self.M_programmed_configuration = None
         self.path = None
         self.content = None
 
@@ -33,29 +47,65 @@ class Record:
 class RecordBuilder :
     def __init__(self) -> None:
         self.record = Record()
-    def setHDV(self,HDV):
+    def set_HDV(self,HDV):
         self.record.HDV = HDV
         return self
     def set_date(self,date):
         self.record.date = date
         return self
     def set_actor(self,actor):
-        self.record.Actor = actor
+        self.record.actor = actor
         return self
     def set_board(self,board_id):
-        self.record.Board = board_id
+        self.record.board = board_id
         return self
     def set_software(self,software):
-        self.record.Software = software
+        self.record.software = software
         return self
     def set_checksum_Flash(self,checksum_Flash):
-        self.record.Checksum_Flash = checksum_Flash
+        self.record.checksum_Flash = checksum_Flash
         return self
     def set_checksum_EEPROM(self,checksum_EEPROM):
-        self.record.Checksum_EEPROM = checksum_EEPROM
+        self.record.checksum_EEPROM = checksum_EEPROM
         return self
     def set_compilation_timedate(self,compilation_timedate):
-        self.record.Compilation_timedate = compilation_timedate
+        self.record.compilation_timedate = compilation_timedate
+        return self
+    def set_spare_part(self,spare_part):
+        self.record.spare_part = spare_part
+        return self
+    def set_config_timedate(self,config_timedate):
+        self.record.config_timedate = config_timedate
+        return self
+    def set_M_programmed_date(self,M_programmed_date):
+        self.record.M_programmed_date = M_programmed_date
+        return self
+    def set_M_programmed_actor(self,M_programmed_actor):
+        self.record.M_programmed_actor = M_programmed_actor
+        return self
+    def set_M_programmed_software(self,M_programmed_software):
+        self.record.M_programmed_software = M_programmed_software
+        return self
+    def set_M_programmed_board(self,M_programmed_board):
+        self.record.M_programmed_board = M_programmed_board
+        return self
+    def set_M_programmed_functionality(self,M_programmed_functionality):
+        self.record.M_programmed_functionality = M_programmed_functionality
+        return self
+    def set_C_programmed_date(self,C_programmed_date):
+        self.record.C_programmed_date = C_programmed_date
+        return self
+    def set_C_programmed_actor(self,C_programmed_actor):
+        self.record.C_programmed_actor = C_programmed_actor
+        return self
+    def set_C_programmed_software(self,C_programmed_software):
+        self.record.C_programmed_software = C_programmed_software
+        return self
+    def set_C_programmed_board(self,C_programmed_board):
+        self.record.C_programmed_board = C_programmed_board
+        return self
+    def set_C_programmed_functionality(self,C_programmed_functionality):
+        self.record.C_programmed_functionality = C_programmed_functionality
         return self
     def set_content(self,content):
         self.record.content = content
@@ -63,18 +113,60 @@ class RecordBuilder :
     def set_path(self,path):
         self.record.path = path
         return self
-    def build(self):
-        return self.record
     
+    #get parameters
+    def get_HDV(self):
+        return self.record.HDV
+    def get_date(self):
+        return self.record.date
+    def get_actor(self,):
+        return self.record.actor    
+    def get_board(self):
+        return self.record.board
+    def get_software(self):
+        return self.record.software
+    def get_checksum_Flash(self):
+        return self.record.checksum_Flash 
+    def get_checksum_EEPROM(self):
+        return self.record.checksum_EEPROM 
+    def get_compilation_timedate(self):
+        return self.record.compilation_timedate
+    def get_spare_part(self):
+        return self.record.spare_part
+    def get_config_timedate(self):
+        return self.record.config_timedate
+    def get_M_programmed_date(self):
+        return self.record.M_programmed_date
+    def get_M_programmed_actor(self):
+        return self.record.M_programmed_actor
+    def get_M_programmed_software(self):
+        return self.record.M_programmed_software
+    def get_M_programmed_board(self):
+        return self.record.M_programmed_board
+    def get_M_programmed_functionality(self):
+        return self.record.M_programmed_functionality
+    def get_C_programmed_date(self):
+        return self.record.C_programmed_date
+    def get_C_programmed_actor(self):
+        return self.record.C_programmed_actor
+    def get_C_programmed_software(self):
+        return self.record.C_programmed_software
+    def get_C_programmed_board(self):
+        return self.record.C_programmed_board
+    def get_C_programmed_functionality(self):
+        return self.record.C_programmed_functionality
     def get_content(self):
         return self.record.content
-    
     def get_path(self):
         return self.record.path  
     
-    def to_dict(self):
+    def build(self):
+        return self.record
+    
+
+
+    def PAP_to_dict(self):
         return {
-            "HDV": self.record.HDV,
             "date": self.record.date,
             "Actor": self.record.Actor,
             "Board": self.record.Board,
@@ -82,5 +174,32 @@ class RecordBuilder :
             "Checksum_Flash": self.record.Checksum_Flash,
             "Checksum_EEPROM": self.record.Checksum_EEPROM,
             "Compilation_timedate": self.record.Compilation_timedate,
+            "Path": self.record.path
+        }
+    
+    def KAM_to_dict(self):
+        return {
+            "HDV": self.record.HDV,
+            "Actor:": self.record.actor,
+            "Software": self.record.software,
+            "Board": self.record.board,
+            "Checksum_Flash": self.record.checksum_Flash,
+            "Checksum_EEPROM": self.record.checksum_EEPROM,
+            "Compilation_timedate": self.record.compilation_timedate,
+            "Spare_part": self.record.spare_part,
+            "Software": self.record.software,
+            "Config_timedate": self.record.config_timedate,
+            "M_programmed_date": self.record.M_programmed_date,
+            "M_programmed_actor": self.record.M_programmed_actor,
+            "M_programmed_software": self.record.M_programmed_software,
+            "M_programmed_board": self.record.M_programmed_board,
+            "M_programmed_functionality": self.record.M_programmed_functionality,
+            "M_programmed_configuration": self.record.M_programmed_configuration,
+            "C_programmed_date": self.record.C_programmed_date,
+            "C_programmed_actor": self.record.C_programmed_actor,
+            "C_programmed_software": self.record.C_programmed_software,
+            "C_programmed_board": self.record.C_programmed_board,
+            "C_programmed_functionality": self.record.C_programmed_functionality,
+            "C_programmed_configuration": self.record.C_programmed_configuration,
             "Path": self.record.path
         }
