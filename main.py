@@ -514,10 +514,6 @@ def create_kam_record_object(record:list, path:str)->None or list:
 
 
 # def create_record_object(record:str, path:str) -> None or list:
-#     #Create new empty instance of record class
-#     record_object_collection.append(RecordBuilder())
-#     record_id=len(record_object_collection)-1
-
 #     record_object_collection[record_id].setContent(record)
 
 #     #check if version is compatible with the script
