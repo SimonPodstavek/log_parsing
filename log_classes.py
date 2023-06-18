@@ -38,15 +38,17 @@ class KAMRecord:
         self.M_programmed_actor = None
         self.M_programmed_software = None
         self.M_programmed_board = None
-        self.M_programmed_functionality = None
-        self.M_programmed_configuration = None
+        self.M_actor = None
+        self.M_functionality = None
+        self.M_configuration = None
         self.M_spare_part = None
         self.C_programmed_date = None
         self.C_programmed_actor = None
         self.C_programmed_software = None
         self.C_programmed_board = None
-        self.C_programmed_functionality = None
-        self.C_programmed_configuration = None
+        self.C_actor = None
+        self.C_functionality = None
+        self.C_configuration = None
         self.C_spare_part = None
         self.path = None
         self.content = None
@@ -147,11 +149,14 @@ class KAMRecordBuilder :
     def set_M_programmed_board(self,M_programmed_board):
         self.record.M_programmed_board = M_programmed_board
         return self
-    def set_M_programmed_functionality(self,M_programmed_functionality):
-        self.record.M_programmed_functionality = M_programmed_functionality
+    def set_M_actor(self,M_actor):
+        self.record.M_actor = M_actor
         return self
-    def set_M_programmed_configuration(self,M_programmed_configuration):
-        self.record.M_programmed_configuration = M_programmed_configuration
+    def set_M_functionality(self,M_functionality):
+        self.record.M_functionality = M_functionality
+        return self
+    def set_M_configuration(self,M_configuration):
+        self.record.M_configuration = M_configuration
         return self
     def set_M_spare_part(self,M_spare_part):
         self.record.M_spare_part = M_spare_part
@@ -168,11 +173,14 @@ class KAMRecordBuilder :
     def set_C_programmed_board(self,C_programmed_board):
         self.record.C_programmed_board = C_programmed_board
         return self
-    def set_C_programmed_functionality(self,C_programmed_functionality):
-        self.record.C_programmed_functionality = C_programmed_functionality
+    def set_C_actor(self,C_actor):
+        self.record.C_actor = C_actor
         return self
-    def set_C_programmed_configuration(self,C_programmed_configuration):
-        self.record.C_programmed_configuration = C_programmed_configuration
+    def set_C_functionality(self,C_functionality):
+        self.record.C_functionality = C_functionality
+        return self
+    def set_C_configuration(self,C_configuration):
+        self.record.C_configuration = C_configuration
         return self
     def set_C_spare_part(self,C_spare_part):
         self.record.C_spare_part = C_spare_part
@@ -197,10 +205,12 @@ class KAMRecordBuilder :
         return self.record.M_programmed_software
     def get_M_programmed_board(self):
         return self.record.M_programmed_board
-    def get_M_programmed_functionality(self):
-        return self.record.M_programmed_functionality
-    def get_M_programmed_configuration(self):
-        return self.record.M_programmed_configuration
+    def get_M_actor(self):
+        return self.record.M_actor
+    def get_M_functionality(self):
+        return self.record.M_functionality
+    def get_M_configuration(self):
+        return self.record.M_configuration
     def get_M_spare_part(self):
         return self.record.M_spare_part
     def get_C_programmed_date(self):
@@ -211,10 +221,12 @@ class KAMRecordBuilder :
         return self.record.C_programmed_software
     def get_C_programmed_board(self):
         return self.record.C_programmed_board
-    def get_C_programmed_functionality(self):
-        return self.record.C_programmed_functionality
-    def get_C_programmed_configuration(self):
-        return self.record.C_programmed_configuration
+    def get_C_actor(self):
+        return self.record.C_actor
+    def get_C_functionality(self):
+        return self.record.C_functionality
+    def get_C_configuration(self):
+        return self.record.C_configuration
     def get_C_spare_part(self):
         return self.record.C_spare_part
     def get_content(self):
@@ -232,15 +244,17 @@ class KAMRecordBuilder :
             "M_programmed_actor": self.record.M_programmed_actor,
             "M_programmed_software": self.record.M_programmed_software,
             "M_programmed_board": self.record.M_programmed_board,
-            "M_programmed_functionality": self.record.M_programmed_functionality,
-            "M_programmed_configuration": self.record.M_programmed_configuration,
+            "M_actor": self.record.M_actor,
+            "M_functionality": self.record.M_functionality,
+            "M_configuration": self.record.M_configuration,
             "M_spare_part": self.record.M_spare_part,
             "C_programmed_date": self.record.C_programmed_date,
             "C_programmed_actor": self.record.C_programmed_actor,
             "C_programmed_software": self.record.C_programmed_software,
             "C_programmed_board": self.record.C_programmed_board,
-            "C_programmed_functionality": self.record.C_programmed_functionality,
-            "C_programmed_configuration": self.record.C_programmed_configuration,
+            "C_actor": self.record.C_actor,
+            "C_functionality": self.record.C_functionality,
+            "C_configuration": self.record.C_configuration,
             "C_spare_part": self.record.C_spare_part,
             "Path": self.record.path
         }

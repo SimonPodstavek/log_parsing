@@ -224,31 +224,42 @@ def create_kam_record_object(record:list, path:str)->None or list:
 
 
 
-    #Find Actor name
-    # parameter_found=False
-    # try:
-    #     response = re.findall(regex_expressions['KAM_actor'], record)
-    #     #Select just first matching REGEX group
-    #     response = ''.join(filter(None, response[0])).strip()
-    #     #Remove closing parenthesis if they do not match opening parenthesis
-    #     if '(' not in response:
-    #         response = response.replace(')', '')
-        
-    #     record_object.set_date(response)
-    #     parameter_found=True
-    # except:
-    #     pass
+    #Find KAM Actor
+    parameter_found = False
+    M_response = ''
+    C_response = ''
+    try:
+        response = re.findall(regex_expressions['KAM_actor'],record)
+        M_response = ''.join(filter(None, response[0])).strip()
+        if len(response) == 2:
+            C_response = ''.join(filter(None, response[1])).strip()
+        else:
+            C_response = M_response
+        parameter_found = True
+    except:
+        pass
 
-    # if parameter_found == False:
-    #     response = error_handler(record_object, 105,"V zadanom zázname neexistuje Actor. Zadajte meno Actor-a",True, "N/A",re.compile(r'.*'))
-    #     if response == None:
-    #         return
-    #     elif response == 111:
-    #         return 111
-    #     else:
-    #         parameter_found=True
+    if parameter_found == False and datetime.date(record_object.get_config_timedate()) > date(2014,1,1):
+        M_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza osoba konajúca konfiguráciu. Zadajte Actora pre kanál M",False, "N/A",re.compile(r'.*'))
+        C_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza osoba konajúca konfiguráciu. Zadajte Actora pre kanál C (Ak je totožný ako kanál M, zadajte \'-\'). ",False, "N/A",re.compile(r'.*'))
+        if M_response == None:
+            return
+        elif M_response == 111:
+            return 111
+        
+        if C_response == None:
+            return
+        elif C_response == 111:
+            return 111
+        elif C_response == '-':
+            C_response = M_response
+
+        parameter_found=True
             
-    # record_object.setActor(response)
+    record_object.set_M_configuration(M_response)
+    record_object.set_C_configuration(C_response)
+
+
 
     #Find HDV (Locomotive ID)
     parameter_found=False
@@ -309,8 +320,8 @@ def create_kam_record_object(record:list, path:str)->None or list:
 
         parameter_found=True
             
-    record_object.set_M_programmed_configuration(M_response)
-    record_object.set_C_programmed_configuration(C_response)
+    record_object.set_M_configuration(M_response)
+    record_object.set_C_configuration(C_response)
     
     # Find KAM Software
     parameter_found = False
@@ -430,8 +441,8 @@ def create_kam_record_object(record:list, path:str)->None or list:
     except:
         pass
             
-    record_object.set_M_programmed_functionality(M_response)
-    record_object.set_C_programmed_functionality(C_response)
+    record_object.set_M_functionality(M_response)
+    record_object.set_C_functionality(C_response)
 
     #Find KAM programmed date
     parameter_found=False
@@ -497,6 +508,9 @@ def create_kam_record_object(record:list, path:str)->None or list:
         record_object.set_C_spare_part(C_response)
     except:
         pass
+
+
+    # If there's not error while building object, append it to satisfying records
     satisfying_records.append(record_object)
 
 
@@ -504,109 +518,6 @@ def create_kam_record_object(record:list, path:str)->None or list:
 
 
         
-
-
-
-
-
-
-
-
-
-# def create_record_object(record:str, path:str) -> None or list:
-#     record_object_collection[record_id].setContent(record)
-
-#     #check if version is compatible with the script
-#     version_row = re.search(regex_expressions['software_version'], record)
-#     if version_row is not None:
-#         version_row=version_row.group(1)
-    
-#     if version_row is None:
-#         response=error_handler(record_object_collection, record_id, 105,"V zadanom zázname neexistuje verzia",True, "N/A",regex_expressions['any_software_version'])
-#         if response == None:
-#             return
-#         elif response == 111:
-#             return 111
-
-#         record_object_collection[record_id].setSoftware(response)
-#     elif re.search(regex_expressions['SW_version_2G'], version_row) is not None:
-#         response=extract_2G_parameters(record_id,version_row)
-#         if response == None:
-#             return
-#         record_object_collection[record_id].setSoftware(response)
-#     elif re.search(regex_expressions['SW_version_3G'], version_row) is not None:
-#         print("3G SW")
-#         return 
-#     else:
-#         version=error_handler(record_object_collection, record_id, 106,"Zadaná verzia nespĺňa kritéria pre SW ver. 2G ani 3G",True,version_row, regex_expressions['any_software_version'])
-#         if version == None:
-#             return
-#         elif response == 111:
-#             return 111
-#         record_object_collection[record_id].setSoftware(response)
-    
-
-#     safebytes=[]
-#     safebytes=re.search(regex_expressions['safebytes'], record)
-#     if safebytes is None:
-#         safebytes=error_handler(record_object_collection, record_id, 108,"V zázname neboli nájdené safe bytes",True, "N/A",regex_expressions['safebytes_repair'])
-#         if safebytes == None:
-#             return
-#         elif response == 111:
-#             return 111
-#     else:
-#         safebytes=safebytes.group(1).split()
-    
-
-#     if safebytes[12] != "01" :
-#         pass
-
-
-
-#     #Get first line and split it by ; and assign it to Record instance
-#     programmed_time_and_date = record.split(';')[0]
-#     original_date_format = datetime.strptime(programmed_time_and_date, '%Y.%m.%d %H:%M:%S')
-#     record_object_collection[record_id].setPAP_date(datetime.strftime(original_date_format, '%Y-%m-%d %H:%M:%S'))
-
-#     #DO NOT APPLY TO VERSION 2.0 and aboove
-#     # Delete 0x from the beginning of the string on positions 4-6 and reverse the string to get HDV. Assign HDV to Record instance
-
-#     # HDV=([x for x in safebytes[7:4:-1]] )
-#     # record_object_collection[record_id].setHDV(''.join(HDV))
-
-#     actor_id=([x for x in safebytes[9:7:-1]] )
-#     actor_id.insert(0,'0x')
-#     record_object_collection[record_id].setActor(int(''.join(actor_id),16))
-
-
-
-#     board_id=([x for x in safebytes[4:1:-1]] )
-#     board_id.insert(0,'0x')
-#     board_id=int(''.join(board_id),16)
-#     required_length=8
-#     number_of_zeros=required_length-len(str(board_id))
-#     board_id=''.join(['V','0'*number_of_zeros,str(board_id)])
-#     record_object_collection[record_id].setBoard(board_id)
-
-#     chsumFlash=''.join(['0x',safebytes[0]])
-#     record_object_collection[record_id].setChecksum_Flash(chsumFlash)
-    
-#     chsumEEPROM=''.join(['0x',safebytes[1]])
-#     record_object_collection[record_id].setChecksum_EEPROM(chsumEEPROM)
-
-
-#     query=re.search(regex_expressions['hex_date'], record)
-#     if query is None:
-#         return 0
-
-#     old_compiled_date=datetime.strptime(query.group(1), '%Y.%m.%d.')
-
-#     record_object_collection[record_id].setCompilation_timedate(datetime.strftime(old_compiled_date, "%Y-%m-%d"))
-
-#     record_object_collection[record_id].setPath('/'.join(path.lower().split('\\')[-3:]))
-
-#     satisfying_records.append(record_object_collection[record_id])
-
 
 
 
