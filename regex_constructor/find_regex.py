@@ -204,47 +204,16 @@ def validate_regex(missing_regex_name:str, record:list, regex_expressions:list,r
 
 
 
-# def find_pap_regex(record:list, file:File)->None:
-#     #find record creation date
-#     query = re.search(regex_expressions['PAP_date'], record)
-#     if not query:
-#         user_input_regex = validate_regex('PAP_date', record, regex_expressions, regex_template_records)
-#         if user_input_regex is not None:
-#             regex_expressions['PAP_date'] = user_input_regex
 
+def find_pap_regex(record:list, file:File)->None:
 
-#     query = query.group(0).strip()
-#     query = query.replace('. ', '.')
-#     for format in ('%Y.%m.%d %H:%M:%S','%m/%d/%Y %H:%M:%S'):
-#         try:
-#             value = datetime.strptime(query, format)
-#             # print(value)
-#             break
-#         except:
-#             pass
-        
-
-
-#     # #find record actor
-#     # query = re.findall(regex_expressions['PAP_actor'], record))
-
-
-
-
-
-
-
-
-
-def find_kam_regex(record:list, file:File)->None:
-
-    #KAM_date
-    value = None
-    query = re.search(regex_expressions['KAM_date'], record)  
+    #find record creation date
+    datem = None
+    query = re.search(regex_expressions['PAP_date'], record)  
     query = query.group(0).strip()
     query = re.sub(r'\s+', ' ', query)
     query = query.replace('. ', '.')
-    for format in ('%d.%m.%Y %H:%M:%S','%m/%d/%Y %H:%M:%S'):
+    for format in ('%d.%m.%Y %H:%M:%S','%Y.%m.%d %H:%M:%S'):
         try:
             datem = datetime.strptime(query, format)
             break
@@ -252,7 +221,42 @@ def find_kam_regex(record:list, file:File)->None:
             pass
 
     if datem is None:
-        raise ValueError('Pre KAM nebol nájdený platný dátum a čas.')
+        return None
+        # raise ValueError('Pre KAM nebol nájdený platný dátum a čas.')
+    print(datem.strftime('%Y.%m.%d %H:%M:%S'))
+
+        
+    return None
+
+
+    # #find record actor
+    # query = re.findall(regex_expressions['PAP_actor'], record))
+
+
+
+
+
+
+
+
+
+# def find_kam_regex(record:list, file:File)->None:
+
+    #KAM_date
+    # value = None
+    # query = re.search(regex_expressions['KAM_date'], record)  
+    # query = query.group(0).strip()
+    # query = re.sub(r'\s+', ' ', query)
+    # query = query.replace('. ', '.')
+    # for format in ('%d.%m.%Y %H:%M:%S','%m/%d/%Y %H:%M:%S'):
+    #     try:
+    #         datem = datetime.strptime(query, format)
+    #         break
+    #     except:
+    #         pass
+
+    # if datem is None:
+    #     raise ValueError('Pre KAM nebol nájdený platný dátum a čas.')
 
 
     # KAM_actor
@@ -432,25 +436,25 @@ def find_kam_regex(record:list, file:File)->None:
     #     print(C_response)
 
     # KAM spare_part
-    response = re.findall(regex_expressions['KAM_spare_part'], record)
-    if len(response) == 0:
-        pass
-        # user_input_regex = validate_regex('KAM_spare_part', record, regex_expressions, regex_template_records)
-        # if user_input_regex is not None:
-        #     regex_expressions['KAM_spare_part'] = user_input_regex
+    # response = re.findall(regex_expressions['KAM_spare_part'], record)
+    # if len(response) == 0:
+    #     pass
+    #     # user_input_regex = validate_regex('KAM_spare_part', record, regex_expressions, regex_template_records)
+    #     # if user_input_regex is not None:
+    #     #     regex_expressions['KAM_spare_part'] = user_input_regex
             
-    else:
-        M_response = ''.join(filter(None, response[0])).strip()
-        if M_response is None:
-            raise ValueError('Pre KAM nebolo možné overiť, či sa jedná o náhradný diel') 
+    # else:
+    #     M_response = ''.join(filter(None, response[0])).strip()
+    #     if M_response is None:
+    #         raise ValueError('Pre KAM nebolo možné overiť, či sa jedná o náhradný diel') 
         
-        if len(response ) == 2:
-            C_response = ''.join(filter(None, response[1])).strip()
-        else:
-            C_response = M_response
+    #     if len(response ) == 2:
+    #         C_response = ''.join(filter(None, response[1])).strip()
+    #     else:
+    #         C_response = M_response
 
-        print(M_response)
-        print(C_response)
+    #     print(M_response)
+    #     print(C_response)
 
 
 
@@ -485,13 +489,12 @@ def main(starting_path:str):
             if any(invalid_expression in  record.lower() for invalid_expression in ['prerušená', 'chyba', 'porušená', 'neplatná', 'error', 'interrupted', 'Consistency of configuration data','broken'] ):
                 continue
             if 'pap' in  file.get_path().lower():
-                pass
-                # find_pap_regex(record, file)
+                find_pap_regex(record, file)
             else:
                 if any(invalid_expression in  record.lower() for invalid_expression in ['------', '———————'] ):
                     continue
-                # pass
-                find_kam_regex(record, file)
+                pass
+                # find_kam_regex(record, file)
 
 
 

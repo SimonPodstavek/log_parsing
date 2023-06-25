@@ -18,7 +18,7 @@ class File:
 class PAPRecord:
     def __init__(self) -> None:
         self.HDV = None
-        self.date = None
+        self.time_date = None
         self.PAP_time = None
         self.actor = None
         self.board = None
@@ -60,8 +60,8 @@ class PAPRecordBuilder :
     def set_HDV(self,HDV):
         self.record.HDV = HDV
         return self
-    def set_date(self,date):
-        self.record.date = date
+    def set_time_date(self,time_date):
+        self.record.time_date = time_date
         return self
     def set_actor(self,actor):
         self.record.actor = actor
@@ -91,8 +91,8 @@ class PAPRecordBuilder :
     #get parameters
     def get_HDV(self):
         return self.record.HDV
-    def get_date(self):
-        return self.record.date
+    def get_time_date(self):
+        return self.record.time_date
     def get_actor(self,):
         return self.record.actor    
     def get_board(self):
@@ -116,7 +116,7 @@ class PAPRecordBuilder :
 
     def to_dict(self):
         return {
-            "date": self.record.date,
+            "Timedate": self.record.time_date,
             "Actor": self.record.Actor,
             "Board": self.record.Board,
             "Software": self.record.Software,
