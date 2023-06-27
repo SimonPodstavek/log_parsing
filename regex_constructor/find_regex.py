@@ -5,8 +5,12 @@ from os.path import abspath, dirname, join, isfile, isdir
 import pickle
 import pyperclip
 from datetime import datetime, date
+path.append("..")
 
-sys.path.append('../src')
+
+from classes.safebytes_coordinates import *
+
+
 from classes.log_classes import File
 
 # Load existing regex expressions
@@ -55,17 +59,17 @@ with open('regex_constructor/regex_template_records.pickle', 'rb') as file:
 
 #USE THIS TO MANUALLY ADD OR REMOVE NEW REGEX EXPRESSIONS
 # regex_template_records.update({'safebytes': []})
-regex_expressions.update({'safebytes': r'(?:Programming safe bytes|Programmovanie safe bytes)\s*-\s*(0x.{4})*:*\s*(.*)\s*-\s*OK'})
+# regex_expressions.update({'safebytes': r'(?:Programming safe bytes|Programmovanie safe bytes)\s*-\s*(0x.{4})*:*\s*(.*)\s*-\s*OK'})
 
-with open('regex_constructor/regex_expressions.pickle', 'wb') as file:
-    if len(regex_expressions) != 0:
-        pickle.dump(regex_expressions, file)
-        print('Regex výrazy boli uložené')
+# with open('regex_constructor/regex_expressions.pickle', 'wb') as file:
+#     if len(regex_expressions) != 0:
+#         pickle.dump(regex_expressions, file)
+#         print('Regex výrazy boli uložené')
 
-with open('regex_constructor/regex_template_records.pickle', 'wb') as file:
-    if len(regex_template_records) != 0:
-        pickle.dump(regex_template_records, file)
-        print('Zdrojové súbory pre regex boli uložené')
+# with open('regex_constructor/regex_template_records.pickle', 'wb') as file:
+#     if len(regex_template_records) != 0:
+#         pickle.dump(regex_template_records, file)
+#         print('Zdrojové súbory pre regex boli uložené')
 
 
 def collect_records_from_files(list_of_files:dict)->tuple:
@@ -223,6 +227,9 @@ def find_pap_regex(record:list, file:File)->None:
     #     except:
     #         pass
 
+    # 
+
+
     # Safebytes
     response = re.findall(regex_expressions['safebytes'], record)
     if len(response) == 0 :
@@ -231,14 +238,21 @@ def find_pap_regex(record:list, file:File)->None:
             regex_expressions['safebytes'] = user_input_regex
     else:
         safebytes = response[0]
+
         if safebytes is None:
             raise ValueError('Pre PAP neboli nájdené safebytes.') 
     
         safebytes_gen = 2
         if safebytes[0] == '0x0002':
             safebytes_gen = 3
+        
+        if safebytes_gen == 3:
+            pass
+
             
-        print(f'{safebytes_gen}G: {safebytes[1]}')
+        # print(f'{safebytes_gen}G: {safebytes[1]}')
+
+
     return None
 
     # #find record actor

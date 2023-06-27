@@ -1,13 +1,14 @@
+import regex_constructor.find_regex
 import re
 import sys
 from os import path, access, R_OK, listdir, walk
 from os.path import abspath, dirname, join, isfile, isdir
-from log_classes import *
-from handle_error import error_handler
+# from log_classes import *
+# from handle_error import error_handler
 from datetime import datetime, date
 from pprint import pprint
 import pickle
-from upload_records import upload_records
+# from upload_records import upload_records
 
 
 
