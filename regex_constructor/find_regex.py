@@ -7,7 +7,7 @@ import pyperclip
 from datetime import datetime, date
 
 sys.path.append('../src')
-from log_classes import File
+from classes.log_classes import File
 
 # Load existing regex expressions
 with open('regex_constructor/regex_expressions.pickle', 'rb') as file:
@@ -55,17 +55,17 @@ with open('regex_constructor/regex_template_records.pickle', 'rb') as file:
 
 #USE THIS TO MANUALLY ADD OR REMOVE NEW REGEX EXPRESSIONS
 # regex_template_records.update({'safebytes': []})
-# regex_expressions.update({'safebytes': r'(?:Programming safe bytes \s*:*-*\s(.*)) - OK\s*\n*\r*'})
+regex_expressions.update({'safebytes': r'(?:Programming safe bytes|Programmovanie safe bytes)\s*-\s*(0x.{4})*:*\s*(.*)\s*-\s*OK'})
 
-# with open('regex_constructor/regex_expressions.pickle', 'wb') as file:
-#     if len(regex_expressions) != 0:
-#         pickle.dump(regex_expressions, file)
-#         print('Regex výrazy boli uložené')
+with open('regex_constructor/regex_expressions.pickle', 'wb') as file:
+    if len(regex_expressions) != 0:
+        pickle.dump(regex_expressions, file)
+        print('Regex výrazy boli uložené')
 
-# with open('regex_constructor/regex_template_records.pickle', 'wb') as file:
-#     if len(regex_template_records) != 0:
-#         pickle.dump(regex_template_records, file)
-#         print('Zdrojové súbory pre regex boli uložené')
+with open('regex_constructor/regex_template_records.pickle', 'wb') as file:
+    if len(regex_template_records) != 0:
+        pickle.dump(regex_template_records, file)
+        print('Zdrojové súbory pre regex boli uložené')
 
 
 def collect_records_from_files(list_of_files:dict)->tuple:
@@ -169,8 +169,8 @@ def collect_records_from_files(list_of_files:dict)->tuple:
 
 
 def validate_regex(missing_regex_name:str, record:list, regex_expressions:list,regex_template_records:list, validation = True)->None:
-    print('*'*80+"\n {} \n \n CHÝBAJÚCI {}".format(record,missing_regex_name, ))
     return None
+    print('*'*80+"\n {} \n \n CHÝBAJÚCI {}".format(record,missing_regex_name, ))
     # pyperclip.copy(regex_expressions[missing_regex_name])
     user_input_regex = input("Zadajte nový regex výraz:\n\r")
     regex_template_records[missing_regex_name].append(record)
@@ -230,12 +230,15 @@ def find_pap_regex(record:list, file:File)->None:
         if user_input_regex is not None:
             regex_expressions['safebytes'] = user_input_regex
     else:
-        response = ''.join(filter(None, response[0])).strip()
-        if response is None:
+        safebytes = response[0]
+        if safebytes is None:
             raise ValueError('Pre PAP neboli nájdené safebytes.') 
-    print(response)
-        
-
+    
+        safebytes_gen = 2
+        if safebytes[0] == '0x0002':
+            safebytes_gen = 3
+            
+        print(f'{safebytes_gen}G: {safebytes[1]}')
     return None
 
     # #find record actor
