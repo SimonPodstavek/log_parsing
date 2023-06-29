@@ -1,10 +1,5 @@
 from datetime import datetime
 
-print(int('0x0002', base=16))
-
-x=[1,2,3,4,5]
-
-print(x[2:4])
 
 #File class contains list of records and path to the file
 class File:

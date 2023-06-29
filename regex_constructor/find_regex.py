@@ -5,10 +5,9 @@ from os.path import abspath, dirname, join, isfile, isdir
 import pickle
 import pyperclip
 from datetime import datetime, date
-path.append("..")
 
 
-from classes.safebytes_coordinates import *
+from classes import safebytes_coordinates
 
 
 from classes.log_classes import File
@@ -58,8 +57,10 @@ with open('regex_constructor/regex_template_records.pickle', 'rb') as file:
 #     regex_expressions.update({key: '$^'})  
 
 #USE THIS TO MANUALLY ADD OR REMOVE NEW REGEX EXPRESSIONS
-# regex_template_records.update({'safebytes': []})
-# regex_expressions.update({'safebytes': r'(?:Programming safe bytes|Programmovanie safe bytes)\s*-\s*(0x.{4})*:*\s*(.*)\s*-\s*OK'})
+# regex_expressions.pop('SW_version_3G')
+# regex_expressions.pop('SW_version_2G')
+# regex_template_records.update({'PAP_software': []})
+regex_expressions.update({'PAP_software': r'(?:(?:SW version|Verzia SW).*[:-](.*))'})
 
 # with open('regex_constructor/regex_expressions.pickle', 'wb') as file:
 #     if len(regex_expressions) != 0:
@@ -227,27 +228,51 @@ def find_pap_regex(record:list, file:File)->None:
     #     except:
     #         pass
 
-    # 
+    
+
+    # SW version
+    response = re.findall(regex_expressions['PAP_software'], record)
+    if len(response) == 0 :
+        user_input_regex = validate_regex('PAP_software', record, regex_expressions, regex_template_records)
+        if user_input_regex is not None:
+            regex_expressions['PAP_software'] = user_input_regex
+    else:
+        response = ''.join(filter(None, response[0])).strip()
+        if response is None:
+            raise ValueError('Pre PAP nebola nájdená verzia SW.') 
+
+    if response == []:
+        print('empty')
+        return None    
+
+    if len(re.findall(r'^[A-Za-z]{2}_[0-9]$', response)):
+        print("2G")
+    elif len(re.findall(r'^[A-Za-z]{4}_[0-9]$', response)):
+        print("3G")
+    else:
+        print("NOG")
+
+
 
 
     # Safebytes
-    response = re.findall(regex_expressions['safebytes'], record)
-    if len(response) == 0 :
-        user_input_regex = validate_regex('safebytes', record, regex_expressions, regex_template_records)
-        if user_input_regex is not None:
-            regex_expressions['safebytes'] = user_input_regex
-    else:
-        safebytes = response[0]
+    # response = re.findall(regex_expressions['safebytes'], record)
+    # if len(response) == 0 :
+    #     user_input_regex = validate_regex('safebytes', record, regex_expressions, regex_template_records)
+    #     if user_input_regex is not None:
+    #         regex_expressions['safebytes'] = user_input_regex
+    # else:
+    #     safebytes = response[0]
 
-        if safebytes is None:
-            raise ValueError('Pre PAP neboli nájdené safebytes.') 
+    #     if safebytes is None:
+    #         raise ValueError('Pre PAP neboli nájdené safebytes.') 
     
-        safebytes_gen = 2
-        if safebytes[0] == '0x0002':
-            safebytes_gen = 3
+    #     safebytes_gen = 2
+    #     if safebytes[0] == '0x0002':
+    #         safebytes_gen = 3
         
-        if safebytes_gen == 3:
-            pass
+    #     if safebytes_gen == 3:
+    #         pass
 
             
         # print(f'{safebytes_gen}G: {safebytes[1]}')
@@ -538,5 +563,5 @@ def main(starting_path:str):
         print('Zdrojové súbory pre regex boli uložené')
 
 
-if __name__ == '__main__':
-    main(abspath(join(dirname(__file__), '../../data/operation logs')))
+# if __name__ == '__main__':
+main(abspath(join(dirname(__file__), '../../data/operation logs')))
