@@ -1,10 +1,9 @@
-import regex_constructor.find_regex
 import re
 import sys
 from os import path, access, R_OK, listdir, walk
 from os.path import abspath, dirname, join, isfile, isdir
-# from log_classes import *
-# from handle_error import error_handler
+from classes.log_classes import *
+from utils.handle_error import *
 from datetime import datetime, date
 from pprint import pprint
 import pickle
@@ -148,7 +147,9 @@ def create_pap_record_object(record:list, path:str)->None or list:
     record_object = PAPRecordBuilder()
     record_object.set_content(record)
 
-    # Get date
+    safebytes = None
+
+    #Find timestamp programmed
     parameter_found=False
     try:
         response = re.search(regex_expressions['PAP_date'], record)
@@ -176,6 +177,69 @@ def create_pap_record_object(record:list, path:str)->None or list:
                 response = datetime.strptime(response, '%d.%m.%Y %H:%M:%S')
                 parameter_found=True
     record_object.set_date(response)
+
+    #Find software
+    parameter_found=False
+    try:
+        response = re.findall(regex_expressions['PAP_software'], record)
+        #Select just first matching REGEX group
+        response = ''.join(filter(None, response[0])).strip()
+        #Remove closing parenthesis if they do not match opening parenthesis
+        response = response.strip()
+        
+        record_object.set_software(response)
+        parameter_found=True
+        record_object.set_software(response)
+    except:
+        return None
+
+
+    #Get safebytes generation
+    software = record_object.get_software()
+    generation = None
+    if re.match(r'^.{2}_.{1,2}$', software):
+        generation = 2
+    elif re.match(r'^.{4}_.{1,2}$', software):
+        generation = 3
+    else:
+        print("SW nie je 2G ani 3G, preskakujem záznam")
+        return None
+    
+
+
+    #Find safebytes
+    parameter_found=False
+    try:
+        response = re.findall(regex_expressions['PAP_safebytes'], record)
+        #Select just first matching REGEX group
+        response = ''.join(filter(None, response[0])).strip()
+        #Remove closing parenthesis if they do not match opening parenthesis
+        safebytes = response.strip().split(' ')
+        parameter_found=True
+    except:
+        pass
+
+    if parameter_found == False:
+        
+        response = error_handler(record_object, 105,"V zadanom zázname neexistuje software. Zadajte software vo formáte XXXX_YY (3G) alebo XX_YY (2G)",True, "N/A",re.compile(r'^[A-Za-z]{2,4}_[0-9]$'))
+        if response == None:
+            return
+        elif response == 111:
+            return 111
+        else:
+            safebytes = response.strip().split(' ')
+            parameter_found=True   
+
+    print (generation)
+
+
+    
+
+
+
+
+
+
     satisfying_records.append(record_object)
 
 
@@ -192,7 +256,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
     record_object.set_content(record)
 
 
-    #find safebytes
+    #Find safebytes
     parameter_found=False
     try:
         safebytes = re.findall(regex_expressions['HDV'], record)

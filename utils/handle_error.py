@@ -1,9 +1,9 @@
 import re
 from msvcrt import getch
-from log_classes import *
+from classes.log_classes import *
 import time
 import sys
-from upload_records import upload_records
+from session.upload_records import upload_records
 
 regex_expressions = {
     'supported_file_types' : re.compile(r'.*_PAP_.*\.log'),
