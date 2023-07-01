@@ -32,11 +32,17 @@ class SafebyteLocations:
 version_by_offset = {3: [2], 2:[496, ]}
 
 safebyte_locations = {
-    "2G_1" : SafebyteLocations(HDV = slice(4,7), actor = slice(7,8), board = slice(2,4), software_version = slice(15,16), software_label = slice(13,15), checksum_Flash = slice(0,1), checksum_EEPROM = slice(1,2)),
-    "2G_2" : SafebyteLocations(HDV = None, actor = slice(8,10), board = slice(2,5), software_version = slice(15,16), software_label = slice(13,15), checksum_Flash = slice(0,1), checksum_EEPROM = slice(1,2)),
-    "3G_1" : SafebyteLocations(HDV = None, actor = slice(3,5), board = slice(8,10), software_version = slice(15,16), software_label = slice(11,15), checksum_Flash = slice(1,2), checksum_EEPROM = slice(2,3)),
-    "3G_2" : SafebyteLocations(HDV = None, actor = slice(3,5), board = slice(8,11), software_version = slice(15,16), software_label = slice(11,15), checksum_Flash = slice(1,2), checksum_EEPROM = slice(2,3)),
-    "3G_3" : SafebyteLocations(HDV = None, actor = slice(3,5), board = slice(8,11), software_version = slice(15,16), software_label = slice(11,15), checksum_Flash = slice(1,2), checksum_EEPROM = slice(2,3)),
+    2 : {
+        1 : SafebyteLocations(HDV = slice(6,3,-1), actor = slice(7,8), board = slice(2,4), software_version = slice(15,16), software_label = slice(13,15), checksum_Flash = slice(0,1), checksum_EEPROM = slice(1,2)),
+        2 : SafebyteLocations(HDV = None, actor = slice(8,10), board = slice(2,5), software_version = slice(15,16), software_label = slice(13,15), checksum_Flash = slice(0,1), checksum_EEPROM = slice(1,2))
+        },
+
+    3 : {
+        1 : SafebyteLocations(HDV = None, actor = slice(3,5), board = slice(8,10), software_version = slice(15,16), software_label = slice(11,15), checksum_Flash = slice(1,2), checksum_EEPROM = slice(2,3)),
+        2 : SafebyteLocations(HDV = None, actor = slice(3,5), board = slice(8,11), software_version = slice(15,16), software_label = slice(11,15), checksum_Flash = slice(1,2), checksum_EEPROM = slice(2,3)),
+        3 : SafebyteLocations(HDV = None, actor = slice(3,5), board = slice(8,11), software_version = slice(15,16), software_label = slice(11,15), checksum_Flash = slice(1,2), checksum_EEPROM = slice(2,3)),
+    
+    }
 }
 
 safebyte_versions = {

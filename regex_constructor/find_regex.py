@@ -60,17 +60,17 @@ with open('regex_constructor/regex_template_records.pickle', 'rb') as file:
 # regex_expressions.pop('SW_version_3G')
 # regex_expressions.pop('SW_version_2G')
 # regex_template_records.update({'PAP_software': []})
-regex_expressions.update({'PAP_software': r'(?:(?:SW version|Verzia SW).*[:-](.*))'})
+regex_expressions.update({'PAP_safebytes': r'(?:Programming safe bytes|Programmovanie safe bytes)\s*-*(?:.*(?=:):)*\s*(.*?)(?:-|\r|\n)'})
 
-# with open('regex_constructor/regex_expressions.pickle', 'wb') as file:
-#     if len(regex_expressions) != 0:
-#         pickle.dump(regex_expressions, file)
-#         print('Regex výrazy boli uložené')
+with open('regex_constructor/regex_expressions.pickle', 'wb') as file:
+    if len(regex_expressions) != 0:
+        pickle.dump(regex_expressions, file)
+        print('Regex výrazy boli uložené')
 
-# with open('regex_constructor/regex_template_records.pickle', 'wb') as file:
-#     if len(regex_template_records) != 0:
-#         pickle.dump(regex_template_records, file)
-#         print('Zdrojové súbory pre regex boli uložené')
+with open('regex_constructor/regex_template_records.pickle', 'wb') as file:
+    if len(regex_template_records) != 0:
+        pickle.dump(regex_template_records, file)
+        print('Zdrojové súbory pre regex boli uložené')
 
 
 def collect_records_from_files(list_of_files:dict)->tuple:

@@ -3,6 +3,7 @@ import sys
 from os import path, access, R_OK, listdir, walk
 from os.path import abspath, dirname, join, isfile, isdir
 from classes.log_classes import *
+from classes.safebytes_coordinates import *
 from utils.handle_error import *
 from datetime import datetime, date
 from pprint import pprint
@@ -139,10 +140,10 @@ def collect_records_from_files(list_of_files:dict)->tuple:
 
 
 
-
+z = 0
 
 def create_pap_record_object(record:list, path:str)->None or list:
-
+    global z
     # Create new empty instance of record class
     record_object = PAPRecordBuilder()
     record_object.set_content(record)
@@ -194,6 +195,8 @@ def create_pap_record_object(record:list, path:str)->None or list:
         return None
 
 
+
+
     #Get safebytes generation
     software = record_object.get_software()
     generation = None
@@ -201,10 +204,13 @@ def create_pap_record_object(record:list, path:str)->None or list:
         generation = 2
     elif re.match(r'^.{4}_.{1,2}$', software):
         generation = 3
-    else:
-        print("SW nie je 2G ani 3G, preskakujem záznam")
+    else:  
+        if software != "noname" and software != "_0":
+            print("SW nie je 2G ani 3G, preskakujem záznam")
+            z+=1
         return None
     
+
 
 
     #Find safebytes
@@ -221,7 +227,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
 
     if parameter_found == False:
         
-        response = error_handler(record_object, 105,"V zadanom zázname neexistuje software. Zadajte software vo formáte XXXX_YY (3G) alebo XX_YY (2G)",True, "N/A",re.compile(r'^[A-Za-z]{2,4}_[0-9]$'))
+        response = error_handler(record_object, 105,"V zadanom zázname neexistujú safebytes. Zadajte safebytes",True, "N/A",re.compile(r'^[A-Za-z]{2,4}_[0-9]$'))
         if response == None:
             return
         elif response == 111:
@@ -230,7 +236,44 @@ def create_pap_record_object(record:list, path:str)->None or list:
             safebytes = response.strip().split(' ')
             parameter_found=True   
 
-    print (generation)
+
+
+    #Get safebytes encoded version, and then map it with safebyte_versions dictionary onto safebytes subversions.
+    # This creates an edition consisting of generation and safebytes version e.g. [2][1]is 1st version of 2nd generation 
+    version = None
+    try:
+        if generation == 2:
+                version = safebyte_versions[int(safebytes[12], 16)]
+        elif generation == 3:
+            version = safebyte_versions[int(safebytes[0], 16)]     
+    except:
+        return None
+
+
+
+    #Get HDV from safebytes
+    HDV = safebytes[safebyte_locations[generation][version].get_HDV()]
+    HDV = ''.join(HDV)
+    record_object.set_HDV(HDV)
+
+    #Get actor ID from safebytes
+    actor = safebytes[safebyte_locations[generation][version].get_actor()]
+    actor = ''.join(actor)
+    record_object.set_actor(actor)
+
+    #Get BOARD from safebytes
+    board = safebytes[safebyte_locations[generation][version].get_board()]
+    board = ''.join(board)
+    record_object.set_board(board)
+
+
+
+
+
+
+
+
+
 
 
     
@@ -244,6 +287,9 @@ def create_pap_record_object(record:list, path:str)->None or list:
 
 
     return None
+
+
+
 
 
 
@@ -638,7 +684,7 @@ def main():
     for file in file_object_collection:
         for record in file.get_records():
             response = None
-            if any(invalid_expression in  record.lower() for invalid_expression in ['prerušená', 'chyba', 'porušená', 'neplatná', 'error', 'interrupted', 'broken'] ):
+            if any(invalid_expression in  record.lower() for invalid_expression in ['mazanie','prerušená', 'chyba', 'porušená', 'neplatná', 'error', 'interrupted', 'broken'] ):
                 continue
             if 'pap' in  file.get_path().lower():
                 response = create_pap_record_object(record, file)
