@@ -29,7 +29,8 @@ class SafebyteLocations:
     def get_checksum_EEPROM(self):
         return self.checksum_EEPROM
     
-version_by_offset = {3: [2], 2:[496, ]}
+
+
 
 safebyte_locations = {
     2 : {

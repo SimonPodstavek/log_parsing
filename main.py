@@ -206,7 +206,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
         generation = 3
     else:  
         if software != "noname" and software != "_0":
-            print("SW nie je 2G ani 3G, preskakujem záznam")
+            print("Software nie je 2G ani 3G, preskakujem záznam")
             z+=1
         return None
     
@@ -237,9 +237,8 @@ def create_pap_record_object(record:list, path:str)->None or list:
             parameter_found=True   
 
 
-
     #Get safebytes encoded version, and then map it with safebyte_versions dictionary onto safebytes subversions.
-    # This creates an edition consisting of generation and safebytes version e.g. [2][1]is 1st version of 2nd generation 
+    # This creates an edition consisting of generation and safebytes version e.g. [2][1] is 1st version of 2nd generation 
     version = None
     try:
         if generation == 2:
@@ -250,21 +249,63 @@ def create_pap_record_object(record:list, path:str)->None or list:
         return None
 
 
+    #Get software version from safebytes    
+    safebytes_softwarfe_version = safebytes[safebyte_locations[generation][version].get_software_version()]
+        #remove leading zeroes
+    safebytes_softwarfe_version = [str(int(x, 16)) for x in safebytes_softwarfe_version]
+    safebytes_softwarfe_version = ''.join(safebytes_softwarfe_version)
+
+
+    #Get software label from safebytes
+    safebytes_softwarfe_label = safebytes[safebyte_locations[generation][version].get_software_label()]
+    safebytes_softwarfe_label = [chr(int(x, 16)) for x in safebytes_softwarfe_label]
+    safebytes_softwarfe_label = ''.join(safebytes_softwarfe_label)
+
+    #Check whether the regex found software matches software from safebytes
+    if software != str(safebytes_softwarfe_label)+'_'+safebytes_softwarfe_version:
+        print('Chyba 115: Verzia softvéru uložená v safebytes sa nezhoduje s verziou v vyhľadanou cez regex. Preskakujem záznam')
+        return None
+
 
     #Get HDV from safebytes
-    HDV = safebytes[safebyte_locations[generation][version].get_HDV()]
-    HDV = ''.join(HDV)
-    record_object.set_HDV(HDV)
+    if safebyte_locations[generation][version].get_HDV() is not None:
+        HDV = safebytes[safebyte_locations[generation][version].get_HDV()]
+        HDV = [int(x, 16) for x in HDV]
+        HDV = ''.join(HDV)
+        record_object.set_HDV(HDV)
+    else:
+        pass
 
     #Get actor ID from safebytes
     actor = safebytes[safebyte_locations[generation][version].get_actor()]
     actor = ''.join(actor)
     record_object.set_actor(actor)
 
-    #Get BOARD from safebytes
+    #Get board from safebytes
     board = safebytes[safebyte_locations[generation][version].get_board()]
     board = ''.join(board)
     record_object.set_board(board)
+    
+    #Get board from safebytes
+    board = safebytes[safebyte_locations[generation][version].get_board()]
+    board = ''.join(board)
+    record_object.set_board(board)
+
+    #Get Checksum Flash from safebytes
+    checksum_Flash = safebytes[safebyte_locations[generation][version].get_checksum_Flash()]
+    checksum_Flash = ''.join(checksum_Flash)
+    record_object.set_checksum_Flash(checksum_Flash)
+
+    #Get Checksum EEPROM from safebytes
+    checksum_EEPROM = safebytes[safebyte_locations[generation][version].get_checksum_EEPROM()]
+    board = ''.join(checksum_EEPROM)
+    record_object.set_checksum_EEPROM(checksum_EEPROM)
+
+
+
+
+
+
 
 
 
