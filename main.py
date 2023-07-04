@@ -2,12 +2,15 @@ import re
 import sys
 from os import path, access, R_OK, listdir, walk
 from os.path import abspath, dirname, join, isfile, isdir
+from datetime import datetime, date
+import datetime
+
+from pprint import pprint
+import pickle
+
 from classes.log_classes import *
 from classes.safebytes_coordinates import *
 from utils.handle_error import *
-from datetime import datetime, date
-from pprint import pprint
-import pickle
 # from upload_records import upload_records
 
 
@@ -150,6 +153,9 @@ def create_pap_record_object(record:list, path:str)->None or list:
 
     safebytes = None
 
+
+
+
     #Find timestamp programmed
     parameter_found=False
     try:
@@ -162,7 +168,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
     for format in ('%Y.%m.%d %H:%M:%S','%Y.%m.%d %H:%M:%S;','%m/%d/%Y %H:%M:%S'):
         try:
             response = datetime.strptime(response, format)
-            record_object.set_date(response)
+            header_pap_datetime = response
             parameter_found=True
             break
         except:
@@ -177,10 +183,17 @@ def create_pap_record_object(record:list, path:str)->None or list:
             else:
                 response = datetime.strptime(response, '%d.%m.%Y %H:%M:%S')
                 parameter_found=True
-    record_object.set_date(response)
+                
+    header_pap_datetime = response
+
+
+
+
+
+
 
     #Find software
-    parameter_found=False
+    parameter_found = False
     try:
         response = re.findall(regex_expressions['PAP_software'], record)
         #Select just first matching REGEX group
@@ -189,11 +202,36 @@ def create_pap_record_object(record:list, path:str)->None or list:
         response = response.strip()
         
         record_object.set_software(response)
-        parameter_found=True
+        parameter_found = True
         record_object.set_software(response)
     except:
         return None
 
+
+
+
+
+    #Find HEX date
+    parameter_found=False
+    try:
+        response = re.findall(regex_expressions['PAP_hex_date'], record)
+        response = response[0][0].strip()
+        response = response.replace('. ', '.')
+    except:
+        pass
+
+    for format in ('%m.%d.%Y','%Y.%m.%d','%Y.%m.%d'):
+        try:
+            response = datetime.strptime(response, format)
+            hex_date = response
+            parameter_found=True
+            break
+        except:
+            pass
+
+    if parameter_found == False:
+        hex_date = None
+    record_object.set_compilation_date(hex_date)
 
 
 
@@ -207,9 +245,9 @@ def create_pap_record_object(record:list, path:str)->None or list:
     else:  
         if software != "noname" and software != "_0":
             print("Software nie je 2G ani 3G, preskakujem záznam")
-            z+=1
         return None
     
+
 
 
 
@@ -237,6 +275,8 @@ def create_pap_record_object(record:list, path:str)->None or list:
             parameter_found=True   
 
 
+
+
     #Get safebytes encoded version, and then map it with safebyte_versions dictionary onto safebytes subversions.
     # This creates an edition consisting of generation and safebytes version e.g. [2][1] is 1st version of 2nd generation 
     version = None
@@ -247,6 +287,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
             version = safebyte_versions[int(safebytes[0], 16)]     
     except:
         return None
+
 
 
     #Get software version from safebytes    
@@ -262,15 +303,48 @@ def create_pap_record_object(record:list, path:str)->None or list:
     safebytes_softwarfe_label = ''.join(safebytes_softwarfe_label)
 
     #Check whether the regex found software matches software from safebytes
-    if software != str(safebytes_softwarfe_label)+'_'+safebytes_softwarfe_version:
-        print('Chyba 115: Verzia softvéru uložená v safebytes sa nezhoduje s verziou v vyhľadanou cez regex. Preskakujem záznam')
+    safebytes_software = str(safebytes_softwarfe_label)+'_'+safebytes_softwarfe_version
+    if software != safebytes_software:
+        response = error_handler(record_object, 115,f'Chyba 115: Verzia softvéru uložená v safebytes sa nezhoduje s verziou vyhľadanou cez regex. Safebytes: {safebytes_software} | Regex: {software}. \n\r\
+                      Pre uloženie verzie so safebyts napíšte \"safebytes\", pre regex napíšte \"regex\". Ak si prajete záznam preskočiť, stlačte enter ',True, "N/A",re.compile(r'($^)|(regex)|(safebytes)'))
+        if response == 'regex':
+            record_object.set_software(software)
+        elif response == 'safebytes':
+            record_object.set_software(safebytes_software)
+        else:
+            return None
+
+
+
+    #Get programmed date from safebytes
+    try:
+
+        safebyte_pap_date = safebytes[safebyte_locations[generation][version].get_programmed_date()]
+        safebyte_pap_date[2] = ''.join(['20'+safebyte_pap_date[2]])
+        safebyte_pap_date = [int(x) for x in safebyte_pap_date]
+        day, month, year = safebyte_pap_date
+        safebyte_pap_date = datetime(year, month, day)
+
+        if datetime.date(safebyte_pap_date) != datetime.date(header_pap_datetime):
+            response = error_handler(record_object, 116,f'Chyba 116: Dátum uložený v safebytes sa nezhoduje s dátumom vyhľadaným cez regex. Safebytes: {safebyte_pap_date} | Regex: {datetime.date(header_pap_datetime)}. \n\r\
+                        Pre uloženie verzie so safebyts napíšte \"safebytes\", pre regex napíšte \"regex\". Ak si prajete záznam preskočiť, stlačte enter ',True, "N/A",re.compile(r'($^)|(regex)|(safebytes)'))
+            if response == 'regex':
+                record_object.set_timedate(header_pap_datetime)
+            elif response == 'safebytes':
+                record_object.set_timedate(datetime.combine(safebyte_pap_date, datetime.min.time()))
+            else:
+                return None
+        else:
+            record_object.set_timedate(header_pap_datetime)
+    except:
+        z+=1
         return None
 
 
     #Get HDV from safebytes
     if safebyte_locations[generation][version].get_HDV() is not None:
         HDV = safebytes[safebyte_locations[generation][version].get_HDV()]
-        HDV = [int(x, 16) for x in HDV]
+        HDV = [str(int(x, 16)) for x in HDV]
         HDV = ''.join(HDV)
         record_object.set_HDV(HDV)
     else:
@@ -280,15 +354,12 @@ def create_pap_record_object(record:list, path:str)->None or list:
     actor = safebytes[safebyte_locations[generation][version].get_actor()]
     actor = ''.join(actor)
     record_object.set_actor(actor)
-
-    #Get board from safebytes
-    board = safebytes[safebyte_locations[generation][version].get_board()]
-    board = ''.join(board)
-    record_object.set_board(board)
     
     #Get board from safebytes
     board = safebytes[safebyte_locations[generation][version].get_board()]
-    board = ''.join(board)
+    board = board[::-1]
+    board = str(int(''.join(board),16))
+    board = ''.join(('V', board.zfill(8)))
     record_object.set_board(board)
 
     #Get Checksum Flash from safebytes
@@ -298,40 +369,13 @@ def create_pap_record_object(record:list, path:str)->None or list:
 
     #Get Checksum EEPROM from safebytes
     checksum_EEPROM = safebytes[safebyte_locations[generation][version].get_checksum_EEPROM()]
-    board = ''.join(checksum_EEPROM)
+    checksum_EEPROM = ''.join(checksum_EEPROM)
     record_object.set_checksum_EEPROM(checksum_EEPROM)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
 
     satisfying_records.append(record_object)
 
 
     return None
-
-
-
-
 
 
 

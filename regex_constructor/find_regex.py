@@ -57,10 +57,9 @@ with open('regex_constructor/regex_template_records.pickle', 'rb') as file:
 #     regex_expressions.update({key: '$^'})  
 
 #USE THIS TO MANUALLY ADD OR REMOVE NEW REGEX EXPRESSIONS
-# regex_expressions.pop('SW_version_3G')
-# regex_expressions.pop('SW_version_2G')
-# regex_template_records.update({'PAP_software': []})
-regex_expressions.update({'PAP_safebytes': r'(?:Programming safe bytes|Programmovanie safe bytes)\s*-*(?:.*(?=:):)*\s*(.*?)(?:-|\r|\n)'})
+# regex_expressions.pop('hex_date')
+# regex_template_records.update({'PAP_hex_date': []})
+regex_expressions.update({'PAP_hex_date': r'(?:(?:HEX.*)|(?:Input file date (?:\/|and) time.*?)|(?:Input file name\/date.*\s*))(?:(\d{1,2}\.\d{1,2}\.\d{4})|(\d{4}\.\d{1,2}\.\d{1,2}))'})
 
 with open('regex_constructor/regex_expressions.pickle', 'wb') as file:
     if len(regex_expressions) != 0:
@@ -72,7 +71,7 @@ with open('regex_constructor/regex_template_records.pickle', 'wb') as file:
         pickle.dump(regex_template_records, file)
         print('Zdrojové súbory pre regex boli uložené')
 
-
+z = 0
 def collect_records_from_files(list_of_files:dict)->tuple:
     failed_files_counter=0
     log_contents,valid_files,records_list,file_object_collection = [],[],[],[]
@@ -210,6 +209,7 @@ def validate_regex(missing_regex_name:str, record:list, regex_expressions:list,r
 
 
 def find_pap_regex(record:list, file:File)->None:
+    global z
     #find record creation date
     # query = re.search(regex_expressions['PAP_date'], record)
     # if not query:
@@ -259,32 +259,47 @@ def find_pap_regex(record:list, file:File)->None:
 
 
     # Safebytes
-    response = re.findall(regex_expressions['safebytes'], record)
-    if len(response) == 0 :
-        user_input_regex = validate_regex('safebytes', record, regex_expressions, regex_template_records)
-        if user_input_regex is not None:
-            regex_expressions['safebytes'] = user_input_regex
-    else:
-        safebytes = response[0]
+    # response = re.findall(regex_expressions['safebytes'], record)
+    # if len(response) == 0 :
+    #     user_input_regex = validate_regex('safebytes', record, regex_expressions, regex_template_records)
+    #     if user_input_regex is not None:
+    #         regex_expressions['safebytes'] = user_input_regex
+    # else:
+    #     safebytes = response[0]
 
-        if safebytes is None:
-            raise ValueError('Pre PAP neboli nájdené safebytes.') 
+    #     if safebytes is None:
+    #         raise ValueError('Pre PAP neboli nájdené safebytes.') 
     
-        safebytes_gen = 2
-        if safebytes[0] == '0x0002':
-            safebytes_gen = 3
+    #     safebytes_gen = 2
+    #     if safebytes[0] == '0x0002':
+    #         safebytes_gen = 3
         
-        if safebytes_gen == 3:
-            pass
+    #     if safebytes_gen == 3:
+    #         pass
 
             
-        print(f'{safebytes_gen}G: {safebytes[1]}')
+    #     print(f'{safebytes_gen}G: {safebytes[1]}')
+
+
+    # HEX date
+    response = re.findall(regex_expressions['PAP_hex_date'], record)
+    if len(response) == 0 :
+        z+=1
+        print('not found')
+        user_input_regex = validate_regex('PAP_hex_date', record, regex_expressions, regex_template_records)
+        if user_input_regex is not None:
+            regex_expressions['PAP_hex_date'] = user_input_regex
+    else:
+        HEX_date = response[0][0]
+        print(HEX_date)
+
+        if HEX_date is None:
+            raise ValueError('Pre PAP nebol nájdený dátum kompilácie') 
+            
+
 
 
     return None
-
-    # #find record actor
-    # query = re.findall(regex_expressions['PAP_actor'], record))
 
 
 

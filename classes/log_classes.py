@@ -19,14 +19,13 @@ class File:
 class PAPRecord:
     def __init__(self) -> None:
         self.HDV = None
-        self.date = None
-        self.PAP_time = None
+        self.timedate = None
         self.actor = None
         self.board = None
         self.software = None
         self.checksum_Flash = None
         self.checksum_EEPROM = None
-        self.compilation_timedate = None
+        self.compilation_date = None
         self.path = None
         self.content = None
 
@@ -61,8 +60,8 @@ class PAPRecordBuilder :
     def set_HDV(self,HDV):
         self.record.HDV = HDV
         return self
-    def set_date(self,date):
-        self.record.date = date
+    def set_timedate(self,timedate):
+        self.record.timedate = timedate
         return self
     def set_actor(self,actor):
         self.record.actor = actor
@@ -79,8 +78,8 @@ class PAPRecordBuilder :
     def set_checksum_EEPROM(self,checksum_EEPROM):
         self.record.checksum_EEPROM = checksum_EEPROM
         return self
-    def set_compilation_timedate(self,compilation_timedate):
-        self.record.compilation_timedate = compilation_timedate
+    def set_compilation_date(self,compilation_date):
+        self.record.compilation_date = compilation_date
         return self
     def set_content(self,content):
         self.record.content = content
@@ -92,8 +91,8 @@ class PAPRecordBuilder :
     #get parameters
     def get_HDV(self):
         return self.record.HDV
-    def get_date(self):
-        return self.record.date
+    def get_timedate(self):
+        return self.record.timedate
     def get_actor(self,):
         return self.record.actor    
     def get_board(self):
@@ -104,8 +103,8 @@ class PAPRecordBuilder :
         return self.record.checksum_Flash 
     def get_checksum_EEPROM(self):
         return self.record.checksum_EEPROM 
-    def get_compilation_timedate(self):
-        return self.record.compilation_timedate
+    def get_compilation_date(self):
+        return self.record.compilation_date
     def get_content(self):
         return self.record.content
     def get_path(self):
@@ -115,17 +114,17 @@ class PAPRecordBuilder :
     
 
 
-    def to_dict(self):
-        return {
-            "date": self.record.date,
-            "Actor": self.record.Actor,
-            "Board": self.record.Board,
-            "Software": self.record.Software,
-            "Checksum_Flash": self.record.Checksum_Flash,
-            "Checksum_EEPROM": self.record.Checksum_EEPROM,
-            "Compilation_timedate": self.record.Compilation_timedate,
-            "Path": self.record.path
-        }
+    # def to_dict(self):
+    #     return {
+    #         "date": self.record.timedate,
+    #         "Actor": self.record.actor,
+    #         "Board": self.record.Board,
+    #         "Software": self.record.Software,
+    #         "Checksum_Flash": self.record.Checksum_Flash,
+    #         "Checksum_EEPROM": self.record.Checksum_EEPROM,
+    #         "Compilation_timedate": self.record.Compilation_timedate,
+    #         "Path": self.record.path
+    #     }
     
 
 #New empty instance of KAM record class
