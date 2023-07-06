@@ -58,8 +58,8 @@ with open('regex_constructor/regex_template_records.pickle', 'rb') as file:
 
 #USE THIS TO MANUALLY ADD OR REMOVE NEW REGEX EXPRESSIONS
 # regex_expressions.pop('hex_date')
-# regex_template_records.update({'PAP_hex_date': []})
-regex_expressions.update({'PAP_hex_date': r'(?:(?:HEX.*)|(?:Input file date (?:\/|and) time.*?)|(?:Input file name\/date.*\s*))(?:(\d{1,2}\.\d{1,2}\.\d{4})|(\d{4}\.\d{1,2}\.\d{1,2}))'})
+regex_template_records.update({'KAM_IRC': []})
+regex_expressions.update({'KAM_IRC': r'(?:.*(?:IRC)\s*:\s*(\d*)\n*\r*)'})
 
 with open('regex_constructor/regex_expressions.pickle', 'wb') as file:
     if len(regex_expressions) != 0:
@@ -173,7 +173,6 @@ def collect_records_from_files(list_of_files:dict)->tuple:
 
 
 def validate_regex(missing_regex_name:str, record:list, regex_expressions:list,regex_template_records:list, validation = True)->None:
-    return None
     print('*'*80+"\n {} \n \n CHÝBAJÚCI {}".format(record,missing_regex_name, ))
     # pyperclip.copy(regex_expressions[missing_regex_name])
     user_input_regex = input("Zadajte nový regex výraz:\n\r")
@@ -284,7 +283,6 @@ def find_pap_regex(record:list, file:File)->None:
     # HEX date
     response = re.findall(regex_expressions['PAP_hex_date'], record)
     if len(response) == 0 :
-        z+=1
         print('not found')
         user_input_regex = validate_regex('PAP_hex_date', record, regex_expressions, regex_template_records)
         if user_input_regex is not None:
@@ -309,23 +307,23 @@ def find_pap_regex(record:list, file:File)->None:
 
 
 
-# def find_kam_regex(record:list, file:File)->None:
+def find_kam_regex(record:list, file:File)->None:
 
-    # #KAM_date
-    # value = None
-    # query = re.search(regex_expressions['KAM_date'], record)  
-    # query = query.group(0).strip()
-    # query = re.sub(r'\s+', ' ', query)
-    # query = query.replace('. ', '.')
-    # for format in ('%d.%m.%Y %H:%M:%S','%m/%d/%Y %H:%M:%S'):
-    #     try:
-    #         datem = datetime.strptime(query, format)
-    #         break
-    #     except:
-    #         pass
+    #KAM_date
+    value = None
+    query = re.search(regex_expressions['KAM_date'], record)  
+    query = query.group(0).strip()
+    query = re.sub(r'\s+', ' ', query)
+    query = query.replace('. ', '.')
+    for format in ('%d.%m.%Y %H:%M:%S','%m/%d/%Y %H:%M:%S'):
+        try:
+            datem = datetime.strptime(query, format)
+            break
+        except:
+            pass
 
-    # if datem is None:
-    #     raise ValueError('Pre KAM nebol nájdený platný dátum a čas.')
+    if datem is None:
+        raise ValueError('Pre KAM nebol nájdený platný dátum a čas.')
 
 
     # KAM_actor
@@ -524,7 +522,43 @@ def find_pap_regex(record:list, file:File)->None:
 
     #     print(M_response)
     #     print(C_response)
-    # return None
+    
+    
+    # KAM_wheel_diameter
+    # response = re.findall(regex_expressions['KAM_wheel_diameter'], record)
+    # if len(response) == 0 and datetime.date(datem) > date(2013,1,1):
+    #     pass
+    #     user_input_regex = validate_regex('KAM_wheel_diameter', record, regex_expressions, regex_template_records)
+    #     if user_input_regex is not None:
+    #         regex_expressions['KAM_wheel_diameter'] = user_input_regex
+            
+    # elif datetime.date(datem) > date(2013,1,1):
+    #     M_response = ''.join(filter(None, response[0])).strip()
+    #     if M_response is None:
+    #         raise ValueError('Pre KAM nebol nájdený priemer kolesa' ) 
+        
+    #     if len(response ) == 2:
+    #         C_response = ''.join(filter(None, response[1])).strip()
+    #     else:
+    #         C_response = M_response
+
+    #     print(M_response)
+    #     print(C_response)
+
+    # KAM_IRC
+    response = re.findall(regex_expressions['KAM_IRC'], record)
+    if len(response) == 0 and datetime.date(datem) > date(2015,1,1):
+        pass
+        # user_input_regex = validate_regex('KAM_IRC', record, regex_expressions, regex_template_records)
+        # if user_input_regex is not None:
+        #     regex_expressions['KAM_IRC'] = user_input_regex
+            
+    elif datetime.date(datem) > date(2015,1,1):
+        pass
+
+
+
+    return None
 
 
 
@@ -559,12 +593,13 @@ def main(starting_path:str):
             if any(invalid_expression in  record.lower() for invalid_expression in ['prerušená', 'chyba', 'porušená', 'neplatná', 'error', 'interrupted', 'Consistency of configuration data','broken', 'ERROR prog enable'] ):
                 continue
             if 'pap' in  file.get_path().lower():
-                find_pap_regex(record, file)
+                # find_pap_regex(record, file)
+                pass
             else:
                 if any(invalid_expression in  record.lower() for invalid_expression in ['------', '———————'] ):
                     continue
                 # pass
-                # find_kam_regex(record, file)
+                find_kam_regex(record, file)
 
 
 
