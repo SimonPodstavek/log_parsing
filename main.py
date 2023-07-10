@@ -236,9 +236,8 @@ def create_pap_record_object(record:list, path:str)->None or list:
     parameter_found=False
     try:
         response = re.findall(regex_expressions['PAP_hex_date'], record)
-        response = response[0][0].strip()
-        response = response.replac
-        ('. ', '.')
+        response = response[0][1].strip()
+        response = response.replace('. ', '.')
     except:
         pass
 
@@ -427,8 +426,11 @@ def create_kam_record_object(record:list, path:str)->None or list:
     #Create new empty instance of record class
     record_object = KAMRecordBuilder()
     record_object.set_content(record)
-            
     record_object.set_path(path.path)
+
+    multichanel = False
+
+    # if 
 
     #Find KAM Config date
     parameter_found=False
@@ -472,6 +474,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
     try:
         response = re.findall(regex_expressions['KAM_actor'],record)
         M_response = ''.join(filter(None, response[0])).strip()
+
         if len(response) == 2:
             C_response = ''.join(filter(None, response[1])).strip()
         else:
