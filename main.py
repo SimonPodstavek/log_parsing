@@ -428,9 +428,11 @@ def create_kam_record_object(record:list, path:str)->None or list:
     record_object.set_content(record)
     record_object.set_path(path.path)
 
-    multichanel = False
+    multichannel = False
 
-    # if 
+    if len(re.findall(regex_expressions['KAM_software'], record)) == 2:
+        multichannel = True
+
 
     #Find KAM Config date
     parameter_found=False
@@ -471,13 +473,14 @@ def create_kam_record_object(record:list, path:str)->None or list:
     parameter_found = False
     M_response = ''
     C_response = ''
+
     try:
         response = re.findall(regex_expressions['KAM_actor'],record)
         M_response = ''.join(filter(None, response[0])).strip()
 
         if len(response) == 2:
             C_response = ''.join(filter(None, response[1])).strip()
-        else:
+        elif multichannel:
             C_response = M_response
         parameter_found = True
     except:
@@ -486,13 +489,16 @@ def create_kam_record_object(record:list, path:str)->None or list:
     if parameter_found == False and datetime.date(record_object.get_config_datetime()) > date(2014,1,1):
         M_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza osoba konajúca konfiguráciu. Zadajte Actora pre kanál M",False, "N/A",re.compile(r'.*'))
         C_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza osoba konajúca konfiguráciu. Zadajte Actora pre kanál C (Ak je totožný ako kanál M, zadajte \'-\'). ",False, "N/A",re.compile(r'.*'))
+        
         if M_response == None:
             failues['KAM_actor_M']+=1
             return None
         elif M_response == 111:
             return 111
         
-        if C_response == None:
+        if not multichannel:
+            pass
+        elif C_response == None:
             failues['KAM_actor_C']+=1
             return None
         elif C_response == 111:
@@ -544,7 +550,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
             M_response = ''.join(filter(None, response[0])).strip()
             if len(response) == 2:
                 C_response = ''.join(filter(None, response[1])).strip()
-            else:
+            elif multichannel:
                 C_response = M_response
             parameter_found = True
     except:
@@ -559,6 +565,8 @@ def create_kam_record_object(record:list, path:str)->None or list:
         elif M_response == 111:
             return 111
         
+        if not multichannel:
+            pass
         if C_response == None:
             failues['KAM_configuration_C']+=1
             return None
@@ -579,8 +587,8 @@ def create_kam_record_object(record:list, path:str)->None or list:
         M_response = ''.join(filter(None, response[0])).strip()
         if len(response) == 2:
             C_response = ''.join(filter(None, response[1])).strip()
-        else:
-            C_response = M_response
+        elif multichannel:
+                C_response = M_response
         parameter_found = True
     except:
         pass
@@ -593,7 +601,9 @@ def create_kam_record_object(record:list, path:str)->None or list:
             return None
         elif M_response == 111:
             return 111
-        
+               
+        if not multichannel:
+            pass
         if C_response == None:
             failues['KAM_SW_C']+=1
             return None
@@ -607,6 +617,8 @@ def create_kam_record_object(record:list, path:str)->None or list:
     record_object.set_M_programmed_software(M_response)
     record_object.set_C_programmed_software(C_response)
 
+
+
     #Find KAM programmed actor
     parameter_found = False
     try:
@@ -614,8 +626,8 @@ def create_kam_record_object(record:list, path:str)->None or list:
         M_response = ''.join(filter(None, response[0])).strip()
         if len(response) == 2:
             C_response = ''.join(filter(None, response[1])).strip()
-        else:
-            C_response = M_response
+        elif multichannel:
+                C_response = M_response
         parameter_found = True
     except:
         pass
@@ -629,6 +641,8 @@ def create_kam_record_object(record:list, path:str)->None or list:
         elif M_response == 111:
             return 111
         
+        if not multichannel:
+            pass
         if C_response == None:
             failues['KAM_prog_actor_M']+=1
             return None
@@ -650,7 +664,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         M_response = ''.join(filter(None, response[0])).strip()
         if len(response) == 2:
             C_response = ''.join(filter(None, response[1])).strip()
-        else:
+        elif multichannel:
             C_response = M_response
         parameter_found = True
     except:
@@ -665,6 +679,8 @@ def create_kam_record_object(record:list, path:str)->None or list:
         elif M_response == 111:
             return 111
         
+        if not multichannel:
+            pass
         if C_response == None:
             failues['KAM_board_n_C']+=1
             return None
@@ -690,7 +706,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
             M_response = ''.join(filter(None, response[0])).strip()
             if len(response) == 2:
                 C_response = ''.join(filter(None, response[1])).strip()
-            else:
+            elif multichannel:
                 C_response = M_response
             parameter_found = True
     except:
@@ -740,6 +756,9 @@ def create_kam_record_object(record:list, path:str)->None or list:
             return 111
         else:
             M_response = datetime.strptime(M_response.strip(), '%d.%m.%Y')
+
+        if not multichannel:
+            pass
         if C_response == None:
             failues['KAM_programmed_date_C']+=1
             return None
@@ -758,7 +777,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         M_response = ''.join(filter(None, response[0])).strip()
         if len(response) == 2:
             C_response = ''.join(filter(None, response[1])).strip()
-        else:
+        elif multichannel:
             C_response = M_response
         parameter_found = True
         record_object.set_M_spare_part(M_response)
@@ -775,7 +794,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
 
         if len(response) == 2:
             C_response = ''.join(filter(None, response[1])).strip()
-        else:
+        elif multichannel:
             C_response = M_response
         parameter_found = True
     except:
@@ -797,19 +816,19 @@ def create_kam_record_object(record:list, path:str)->None or list:
 
         if len(response) == 2:
             C_response = ''.join(filter(None, response[1])).strip()
-        else:
+        elif multichannel:
             C_response = M_response
         parameter_found = True
     except:
         pass
 
-    if parameter_found == False:
-        M_response = None
-        C_response = None
+    if parameter_found == False or isinstance(M_response, None):
+        M_response = '0'
+        C_response = '0'
     
 
-    record_object.set_M_IRC(M_response)
-    record_object.set_C_IRC(C_response)
+    record_object.set_M_IRC(int(M_response))
+    record_object.set_C_IRC(int(C_response))
 
 
 
