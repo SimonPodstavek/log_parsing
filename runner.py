@@ -1,5 +1,6 @@
 import re
-from session import upload_records
+from session.upload_records import upload_records
+upload_records()
 
 # mls = """
 

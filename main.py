@@ -1,7 +1,7 @@
 import re
 import sys
 from os import path, access, R_OK, listdir, walk
-from os.path import abspath, dirname, join, isfile, isdir
+from os.path import abspath, dirname, join, isfile, isdir, realpath
 from datetime import datetime, date
 import datetime
 
@@ -115,8 +115,6 @@ def collect_records_from_files(list_of_files:dict)->tuple:
                 file_decoded = False
         opened_file.close()
 
-
-
         #if decoding fails, try to decode as windows-1250
         if not file_decoded:
             with open(file, 'r', encoding='windows-1250') as opened_file:
@@ -126,9 +124,6 @@ def collect_records_from_files(list_of_files:dict)->tuple:
                 except:
                     file_decoded = False
             opened_file.close()
-
-
-
         if not file_decoded:
             print("Chyba 112: Pre súbor {} nebolo nájdené podporované enkódovanie. FILE_SKIPPED".format(file))
             failed_files_counter+=1
@@ -138,7 +133,6 @@ def collect_records_from_files(list_of_files:dict)->tuple:
     
         #the following regex expressions are used to determine the type of log file
         #after the type is determined, the contents of the file are split into individual records, removing separators, keeping log header
-
         #PAP log
         if re.compile(r'.*pap.*\.(log|txt)').search(file.lower()):
             records_list=log_contents.split('-'*80)
@@ -160,6 +154,9 @@ def collect_records_from_files(list_of_files:dict)->tuple:
         #Remove records that are shorter than 151 characters
         records_list = [x for x in records_list if len(x.strip()) > 150] 
         
+        file = path.relpath(file, abspath(join(dirname(__file__),'../data/operation logs')))
+        file = file.replace('\\', '/').lower()
+
         file_object_collection.append(File(records_list, file))
 
 
@@ -167,16 +164,14 @@ def collect_records_from_files(list_of_files:dict)->tuple:
 
 
 
-
-z = 0
-
 def create_pap_record_object(record:list, path:str)->None or list:
-    global z
     # Create new empty instance of record class
     record_object = PAPRecordBuilder()
     record_object.set_content(record)
 
     safebytes = None
+
+    record_object.set_path(path.path)
 
 
 
@@ -258,7 +253,6 @@ def create_pap_record_object(record:list, path:str)->None or list:
 
     if parameter_found == False:
         hex_date = None
-        z+=1
     record_object.set_compilation_date(hex_date)
 
 
@@ -389,7 +383,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
     #Get actor ID from safebytes
     actor = safebytes[safebyte_locations[generation][version].get_actor()]
     actor = ''.join(actor)
-    record_object.set_actor(actor)
+    record_object.set_actor(int(actor,16))
     
     #Get board from safebytes
     board = safebytes[safebyte_locations[generation][version].get_board()]
@@ -434,7 +428,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
     record_object = KAMRecordBuilder()
     record_object.set_content(record)
             
-
+    record_object.set_path(path.path)
 
     #Find KAM Config date
     parameter_found=False
@@ -505,8 +499,8 @@ def create_kam_record_object(record:list, path:str)->None or list:
 
         parameter_found=True
             
-    record_object.set_M_configuration(M_response)
-    record_object.set_C_configuration(C_response)
+    record_object.set_M_actor(M_response)
+    record_object.set_C_actor(C_response)
 
 
 
@@ -834,7 +828,7 @@ def main():
 
 
     
-    starting_path = abspath(join(dirname(__file__), '../data/operation logs'))
+    starting_path = abspath(join(dirname(__file__), '../data/operation logs/2023/01'))
     print("Začínam spracovávať súbory v adresári: {}".format(starting_path))
    
     paths=[]
@@ -875,8 +869,7 @@ def main():
                 pass
             
             if response == 111:
-                pass
-                # upload_records(satisfying_records,number_of_records)
+                upload_records(satisfying_records,number_of_records-KAM_removed_duplicit_records, records_with_invalid_expression)
                 break
             
     upload_records(satisfying_records,number_of_records-KAM_removed_duplicit_records, records_with_invalid_expression)

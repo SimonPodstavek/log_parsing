@@ -13,6 +13,7 @@ def create_session():
             user="ovypt1",
             password=os.getenv("HMH_AZURE_LOG_PSSWD")
         )
+        
 
         cursor = conn.cursor()
         return cursor, conn

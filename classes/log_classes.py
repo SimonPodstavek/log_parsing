@@ -97,7 +97,7 @@ class PAPRecordBuilder :
         return self.record.HDV
     def get_datetime(self):
         return self.record.datetime
-    def get_actor(self,):
+    def get_actor(self):
         return self.record.actor    
     def get_board(self):
         return self.record.board
