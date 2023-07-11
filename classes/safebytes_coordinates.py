@@ -38,6 +38,7 @@ safebyte_locations = {
     2 : {
         1 : SafebyteLocations(HDV = slice(6, 3, -1), actor = slice(7, 8), board = slice(2, 4), programmed_date = slice(8, 11), software_version = slice(15, 16), software_label = slice(13, 15), checksum_Flash = slice(0, 1), checksum_EEPROM = slice(1, 2)),
         2 : SafebyteLocations(HDV = None, actor = slice(8, 10), board = slice(2, 5), programmed_date = slice(5, 8), software_version = slice(15, 16), software_label = slice(13, 15), checksum_Flash = slice(0, 1), checksum_EEPROM = slice(1, 2))
+        # 3 : SafebyteLocations(HDV = slice(6, 3, -1), actor = slice(7, 8), board = slice(2, 4), programmed_date = slice(8, 11), checksum_Flash = slice(0, 1), checksum_EEPROM = slice(1, 2))
         },
 
     3 : {

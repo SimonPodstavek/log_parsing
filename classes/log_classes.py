@@ -32,6 +32,7 @@ class PAPRecord:
 #Record class is a template for KAMRecordBuilder
 class KAMRecord:
     def __init__(self) -> None:
+        self.multichannel = False
         self.HDV = None
         self.config_datetime = None
         self.M_programmed_date = None
@@ -135,6 +136,9 @@ class PAPRecordBuilder :
 class KAMRecordBuilder :
     def __init__(self) -> None:
         self.record = KAMRecord()
+    def set_multichannel(self,multichannel):
+        self.record.multichannel = multichannel
+        return self
     def set_HDV(self,HDV):
         self.record.HDV = HDV
         return self
@@ -209,6 +213,8 @@ class KAMRecordBuilder :
         return self
     
     #get parameters
+    def get_multichannel(self):
+        return self.record.multichannel
     def get_HDV(self):
         return self.record.HDV
     def get_config_datetime(self):

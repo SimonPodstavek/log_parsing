@@ -1,6 +1,5 @@
-import re
-from session.upload_records import upload_records
-upload_records()
+
+import regex_constructor.find_regex
 
 # mls = """
 

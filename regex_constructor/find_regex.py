@@ -58,18 +58,18 @@ with open('regex_constructor/regex_template_records.pickle', 'rb') as file:
 
 #USE THIS TO MANUALLY ADD OR REMOVE NEW REGEX EXPRESSIONS
 # regex_expressions.pop('hex_date')
-regex_template_records.update({'KAM_IRC': []})
-regex_expressions.update({'KAM_IRC': r'(?:.*(?:IRC)\s*:\s*(\d*)\n*\r*)'})
+# regex_template_records.update({'KAM_IRC': []})
+# regex_expressions.update({'KAM_IRC': r'(?:.*(?:IRC)\s*:\s*(\d*)\n*\r*)'})
 
-with open('regex_constructor/regex_expressions.pickle', 'wb') as file:
-    if len(regex_expressions) != 0:
-        pickle.dump(regex_expressions, file)
-        print('Regex výrazy boli uložené')
+# with open('regex_constructor/regex_expressions.pickle', 'wb') as file:
+#     if len(regex_expressions) != 0:
+#         pickle.dump(regex_expressions, file)
+#         print('Regex výrazy boli uložené')
 
-with open('regex_constructor/regex_template_records.pickle', 'wb') as file:
-    if len(regex_template_records) != 0:
-        pickle.dump(regex_template_records, file)
-        print('Zdrojové súbory pre regex boli uložené')
+# with open('regex_constructor/regex_template_records.pickle', 'wb') as file:
+#     if len(regex_template_records) != 0:
+#         pickle.dump(regex_template_records, file)
+#         print('Zdrojové súbory pre regex boli uložené')
 
 z = 0
 def collect_records_from_files(list_of_files:dict)->tuple:
@@ -209,23 +209,22 @@ def validate_regex(missing_regex_name:str, record:list, regex_expressions:list,r
 
 def find_pap_regex(record:list, file:File)->None:
     global z
-    #find record creation date
-    # query = re.search(regex_expressions['PAP_date'], record)
-    # if not query:
-    #     user_input_regex = validate_regex('PAP_date', record, regex_expressions, regex_template_records)
-    #     if user_input_regex is not None:
-    #         regex_expressions['PAP_date'] = user_input_regex
+    # find record creation date
+    query = re.search(regex_expressions['PAP_date'], record)
+    if not query:
+        user_input_regex = validate_regex('PAP_date', record, regex_expressions, regex_template_records)
+        if user_input_regex is not None:
+            regex_expressions['PAP_date'] = user_input_regex
 
 
-    # query = query.group(0).strip()
-    # query = query.replace('. ', '.')
-    # for format in ('%Y.%m.%d %H:%M:%S','%m/%d/%Y %H:%M:%S'):
-    #     try:
-    #         value = datetime.strptime(query, format)
-    #         # print(value)
-    #         break
-    #     except:
-    #         pass
+    query = query.group(0).strip()
+    query = query.replace('. ', '.')
+    for format in ('%Y.%m.%d %H:%M:%S','%m/%d/%Y %H:%M:%S'):
+        try:
+            value = datetime.strptime(query, format)
+            break
+        except:
+            pass
 
     
 
@@ -258,41 +257,35 @@ def find_pap_regex(record:list, file:File)->None:
 
 
     # Safebytes
-    # response = re.findall(regex_expressions['safebytes'], record)
-    # if len(response) == 0 :
-    #     user_input_regex = validate_regex('safebytes', record, regex_expressions, regex_template_records)
-    #     if user_input_regex is not None:
-    #         regex_expressions['safebytes'] = user_input_regex
-    # else:
-    #     safebytes = response[0]
+    response = re.findall(regex_expressions['PAP_safebytes'], record)
+   
+    if len(response) == 0 and value > datetime(2009,10,10) :
+        user_input_regex = validate_regex('PAP_safebytes', record, regex_expressions, regex_template_records)
+        if user_input_regex is not None:
+            regex_expressions['PAP_safebytes'] = user_input_regex
+    elif value > datetime(2009,10,10):
+        safebytes = response[0]
+        print(safebytes) 
+        if safebytes is None:
+            raise ValueError('Pre PAP neboli nájdené safebytes.') 
 
-    #     if safebytes is None:
-    #         raise ValueError('Pre PAP neboli nájdené safebytes.') 
-    
-    #     safebytes_gen = 2
-    #     if safebytes[0] == '0x0002':
-    #         safebytes_gen = 3
-        
-    #     if safebytes_gen == 3:
-    #         pass
 
-            
-    #     print(f'{safebytes_gen}G: {safebytes[1]}')
+
 
 
     # HEX date
-    response = re.findall(regex_expressions['PAP_hex_date'], record)
-    if len(response) == 0 :
-        print('not found')
-        user_input_regex = validate_regex('PAP_hex_date', record, regex_expressions, regex_template_records)
-        if user_input_regex is not None:
-            regex_expressions['PAP_hex_date'] = user_input_regex
-    else:
-        HEX_date = response[0][0]
-        print(HEX_date)
+    # response = re.findall(regex_expressions['PAP_hex_date'], record)
+    # if len(response) == 0 :
+    #     print('not found')
+    #     user_input_regex = validate_regex('PAP_hex_date', record, regex_expressions, regex_template_records)
+    #     if user_input_regex is not None:
+    #         regex_expressions['PAP_hex_date'] = user_input_regex
+    # else:
+    #     HEX_date = response[0][0]
+    #     print(HEX_date)
 
-        if HEX_date is None:
-            raise ValueError('Pre PAP nebol nájdený dátum kompilácie') 
+    #     if HEX_date is None:
+    #         raise ValueError('Pre PAP nebol nájdený dátum kompilácie') 
             
 
 
@@ -593,13 +586,13 @@ def main(starting_path:str):
             if any(invalid_expression in  record.lower() for invalid_expression in ['prerušená', 'chyba', 'porušená', 'neplatná', 'error', 'interrupted', 'Consistency of configuration data','broken', 'ERROR prog enable'] ):
                 continue
             if 'pap' in  file.get_path().lower():
-                # find_pap_regex(record, file)
+                find_pap_regex(record, file)
                 pass
             else:
                 if any(invalid_expression in  record.lower() for invalid_expression in ['------', '———————'] ):
                     continue
                 # pass
-                find_kam_regex(record, file)
+                # find_kam_regex(record, file)
 
 
 
@@ -617,4 +610,4 @@ def main(starting_path:str):
 
 
 # if __name__ == '__main__':
-main(abspath(join(dirname(__file__), '../../data/operation logs')))
+main(abspath(join(dirname(__file__), '../../data/operation logs/2009')))

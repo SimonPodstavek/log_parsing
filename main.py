@@ -36,7 +36,8 @@ failues = {
 'KAM_board_n_M': 0,
 'KAM_board_n_C': 0,
 'KAM_programmed_date_M': 0,
-'KAM_programmed_date_C': 0
+'KAM_programmed_date_C': 0,
+'noname_SW': 0
 
 }
 
@@ -258,6 +259,10 @@ def create_pap_record_object(record:list, path:str)->None or list:
 
     #Get safebytes generation
     software = record_object.get_software()
+    if software == 'noname':
+        failues['noname_SW']+=1
+        return None
+    
     generation = None
     if re.match(r'^.{2}_.{1,2}$', software):
         generation = 2
@@ -266,8 +271,8 @@ def create_pap_record_object(record:list, path:str)->None or list:
     else:  
         if software != "noname" and software != "_0":
             print("Software nie je 2G ani 3G, preskakujem záznam")
-        failues['PAP_SW_detection']
-        return None
+            failues['PAP_SW_detection']+=1
+            return None
     
 
 
@@ -285,9 +290,9 @@ def create_pap_record_object(record:list, path:str)->None or list:
     except:
         pass
 
-    if parameter_found == False:
+    if parameter_found == False or safebytes == ['']:
         
-        response = error_handler(record_object, 105,"V zadanom zázname neexistujú safebytes. Zadajte safebytes",True, "N/A",re.compile(r'^[A-Za-z]{2,4}_[0-9]$'))
+        response = error_handler(record_object, 105,"V zadanom zázname neexistujú safebytes. Zadajte safebytes",True, "N/A",re.compile(r'(?:[0-9A-F]{2} *)*'))
         if response == None:
             failues['pap_safebytes'] += 1
             return None
@@ -305,64 +310,71 @@ def create_pap_record_object(record:list, path:str)->None or list:
     # This creates an edition consisting of generation and safebytes version e.g. [2][1] is 1st version of 2nd generation 
     version = None
     try:
-        if len(safebytes) <14:
+        if len(safebytes) < 14:
             version = 2
         elif generation == 2:
                 version = safebyte_versions[int(safebytes[12], 16)]
         elif generation == 3:
-            version = safebyte_versions[int(safebytes[0], 16)]     
+            version = safebyte_versions[int(safebytes[0], 16)] 
+        else:
+            return None    
     except:
         failues['safebytes_version_encoding']+=1
         return None
 
 
 
-    #Get software version from safebytes    
-    safebytes_softwarfe_version = safebytes[safebyte_locations[generation][version].get_software_version()]
+
+    if len(safebytes) >= 14:
+        #Get software version from safebytes    
+        safebytes_softwarfe_version = safebytes[safebyte_locations[generation][version].get_software_version()]
         #remove leading zeroes
-    safebytes_softwarfe_version = [str(int(x, 16)) for x in safebytes_softwarfe_version]
-    safebytes_softwarfe_version = ''.join(safebytes_softwarfe_version)
+        safebytes_softwarfe_version = [str(int(x, 16)) for x in safebytes_softwarfe_version]
+        safebytes_softwarfe_version = ''.join(safebytes_softwarfe_version)
 
 
-    #Get software label from safebytes
-    safebytes_softwarfe_label = safebytes[safebyte_locations[generation][version].get_software_label()]
-    safebytes_softwarfe_label = [chr(int(x, 16)) for x in safebytes_softwarfe_label]
-    safebytes_softwarfe_label = ''.join(safebytes_softwarfe_label)
+        #Get software label from safebytes
+        safebytes_softwarfe_label = safebytes[safebyte_locations[generation][version].get_software_label()]
+        safebytes_softwarfe_label = [chr(int(x, 16)) for x in safebytes_softwarfe_label]
+        safebytes_softwarfe_label = ''.join(safebytes_softwarfe_label)
 
-    #Check whether the regex found software matches software from safebytes
-    safebytes_software = str(safebytes_softwarfe_label)+'_'+safebytes_softwarfe_version
-    if software != safebytes_software and software is not None:
-        response = error_handler(record_object, 115,f'Chyba 115: Verzia softvéru uložená v safebytes sa nezhoduje s verziou vyhľadanou cez regex. Safebytes: {safebytes_software} | Regex: {software}. \n\r\
-                      Pre uloženie verzie zo safebyts napíšte \"safebytes\", pre regex napíšte \"regex\". Ak si prajete záznam preskočiť, stlačte enter ',True, "N/A",re.compile(r'($^)|(regex)|(safebytes)'))
-        if response == 'regex':
-            record_object.set_software(software)
-        elif response == 'safebytes':
-            record_object.set_software(safebytes_software)
-        else:
-            failues['PAP_regex_sw_doesnt_match']+=1
-            return None
+
+        #Check whether the regex found software matches software from safebytes
+        safebytes_software = str(safebytes_softwarfe_label)+'_'+safebytes_softwarfe_version
+        if software != safebytes_software and software is not None:
+
+            response = error_handler(record_object, 115,f'Chyba 115: Verzia softvéru uložená v safebytes sa nezhoduje s verziou vyhľadanou cez regex. Safebytes: {safebytes_software} | Regex: {software}. \n\r\
+                        Pre uloženie verzie zo safebyts napíšte \"safebytes\", pre regex napíšte \"regex\". Ak si prajete záznam preskočiť, stlačte enter ',True, "N/A",re.compile(r'($^)|(regex)|(safebytes)'))
+            if response == 'regex':
+                record_object.set_software(software)
+            elif response == 'safebytes':
+                record_object.set_software(safebytes_software)
+            else:
+                failues['PAP_regex_sw_doesnt_match']+=1
+                return None
 
 
 
     #Get programmed date from safebytes
     try:
 
-        safebyte_pap_date = safebytes[safebyte_locations[generation][version].get_programmed_date()]
-        safebyte_pap_date[2] = ''.join(['20'+safebyte_pap_date[2]])
-        safebyte_pap_date = [int(x) for x in safebyte_pap_date]
-        day, month, year = safebyte_pap_date
-        safebyte_pap_date = datetime(year, month, day)
+        if datetime.date(header_pap_datetime) > date(2011,1,1):
+            safebyte_pap_date = safebytes[safebyte_locations[generation][version].get_programmed_date()]
+            safebyte_pap_date[2] = ''.join(['20'+safebyte_pap_date[2]])
+            safebyte_pap_date = [int(x) for x in safebyte_pap_date]
+            day, month, year = safebyte_pap_date
+            safebyte_pap_date = datetime(year, month, day)
 
-        if datetime.date(safebyte_pap_date) != datetime.date(header_pap_datetime):
-            response = error_handler(record_object, 116,f'Chyba 116: Dátum uložený v safebytes sa nezhoduje s dátumom vyhľadaným cez regex. Safebytes: {safebyte_pap_date} | Regex: {datetime.date(header_pap_datetime)} \n\r\
-                        Pre uloženie verzie zo safebyts napíšte \"safebytes\", pre regex napíšte \"regex\". Ak si prajete záznam preskočiť, stlačte enter ',True, "N/A",re.compile(r'($^)|(regex)|(safebytes)'))
-            if response == 'regex':
-                record_object.set_datetime(header_pap_datetime)
-            elif response == 'safebytes':
-                record_object.set_datetime(datetime.combine(safebyte_pap_date, datetime.min.time()))
-            else:
-                failues['programmed_date_PAP1']+=1
-                return None
+            if datetime.date(safebyte_pap_date) != datetime.date(header_pap_datetime):
+                response = error_handler(record_object, 116,f'Chyba 116: Dátum uložený v safebytes sa nezhoduje s dátumom vyhľadaným cez regex. Safebytes: {datetime.date(safebyte_pap_date)} | Regex: {datetime.date(header_pap_datetime)} \n\r\
+                            Pre uloženie verzie zo safebyts napíšte \"safebytes\", pre regex napíšte \"regex\". Ak si prajete záznam preskočiť, stlačte enter ',True, "N/A",re.compile(r'($^)|(regex)|(safebytes)'))
+                if response == 'regex':
+                    record_object.set_datetime(header_pap_datetime)
+                elif response == 'safebytes':
+                    record_object.set_datetime(datetime.combine(safebyte_pap_date, datetime.min.time()))
+                else:
+                    failues['programmed_date_PAP1']+=1
+                    return None
         else:
             record_object.set_datetime(header_pap_datetime)
     except:
@@ -373,7 +385,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
     #Get HDV from safebytes
     if safebyte_locations[generation][version].get_HDV() is not None:
         HDV = safebytes[safebyte_locations[generation][version].get_HDV()]
-        HDV = [str(int(x, 16)) for x in HDV]
+        # HDV = [str(int(x, 16)) for x in HDV]
         HDV = ''.join(HDV)
         record_object.set_HDV(HDV)
     else:
@@ -432,6 +444,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
 
     if len(re.findall(regex_expressions['KAM_software'], record)) == 2:
         multichannel = True
+    record_object.set_multichannel = multichannel
 
 
     #Find KAM Config date
@@ -771,15 +784,40 @@ def create_kam_record_object(record:list, path:str)->None or list:
         record_object.set_C_programmed_date(C_response)
 
     #Find KAM spare part 
+    M_response = None
+    C_response = None
     parameter_found = False
     try:
         response = re.findall(regex_expressions['KAM_spare_part'],record)
-        M_response = ''.join(filter(None, response[0])).strip()
+        M_response = ''.join(filter(None, response[0])).strip().lower()
         if len(response) == 2:
-            C_response = ''.join(filter(None, response[1])).strip()
+            C_response = ''.join(filter(None, response[1])).strip().lower()
         elif multichannel:
             C_response = M_response
         parameter_found = True
+
+        translations_of_word_yes = ['áno', 'ano', 'yes', 'ja'] 
+        translations_of_word_no = ['nie', 'no', 'nein'] 
+
+        if M_response is None:
+            pass
+        elif M_response in translations_of_word_yes:
+            M_response = True
+        elif M_response in translations_of_word_no:
+            M_response = False
+        else:
+            print("Nemožno zvalidovať náhradnú časť pre kanál M")
+            return None
+        
+        if C_response is None:
+            pass
+        elif C_response in translations_of_word_yes:
+            C_response = True
+        elif C_response in translations_of_word_no:
+            C_response = False
+        else:
+            return None
+
         record_object.set_M_spare_part(M_response)
         record_object.set_C_spare_part(C_response)
     except:
@@ -809,6 +847,8 @@ def create_kam_record_object(record:list, path:str)->None or list:
 
 
     # Find KAM IRC
+    M_response = '0'
+    C_response = '0'
     parameter_found = False
     try:
         response = re.findall(regex_expressions['KAM_IRC'],record)
@@ -822,7 +862,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
     except:
         pass
 
-    if parameter_found == False or isinstance(M_response, None):
+    if parameter_found == False or M_response is None:
         M_response = '0'
         C_response = '0'
     
@@ -850,7 +890,7 @@ def main():
 
 
     
-    starting_path = abspath(join(dirname(__file__), '../data/operation logs/2023/01'))
+    starting_path = abspath(join(dirname(__file__), '../data/operation logs/'))
     print("Začínam spracovávať súbory v adresári: {}".format(starting_path))
    
     paths=[]

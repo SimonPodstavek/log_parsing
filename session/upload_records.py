@@ -165,7 +165,7 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
             if record_object.get_compilation_date() is not None:
                 record["Compilation_date"] = record_object.get_compilation_date().strftime(r'%Y-%m-%d') 
 
-            record["Datetime"] = record_object.get_config_datetime().strftime(r'%Y-%m-%d %H:%M:%S') 
+            record["Datetime"] = record_object.get_datetime().strftime(r'%Y-%m-%d %H:%M:%S') 
             record["Processed_datetime"] = datetime.now().strftime(r'%Y-%m-%d %H:%M:%S') 
             record["Actor"] = actors[record_object.get_actor()]
             record["Board"] = boards[record_object.get_board()]
@@ -176,7 +176,7 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
                 ~{record["Software"]}~True~{record["Path"]}~{record["Processed_datetime"]}' + '\n'
 
         elif isinstance(record_object, classes.log_classes.KAMRecordBuilder):  
-            record["config_datetime"] = record_object.get_config_datetime().strftime(r'%Y-%m-%d') 
+            record["config_datetime"] = record_object.get_config_datetime().strftime(r'%Y-%m-%d %H:%M:%S') 
             
             # Channel M
             record["M_programmed_date"] = record_object.get_M_programmed_date().strftime(r'%Y-%m-%d') 
@@ -189,16 +189,20 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
             record["M_spare_part"] = record_object.get_M_spare_part()
 
             # Channel C
-            record["C_programmed_date"] = record_object.get_C_programmed_date().strftime(r'%Y-%m-%d') 
-            # record["C_config_actor"] = actors[record_object.get_C_programmed_actor()]
-            record["C_software_ID"] = software[record_object.get_C_programmed_software()]
-            record["C_board_ID"] = boards[record_object.get_C_programmed_board()]
-            record["C_functonality"] = record_object.get_C_functionality()
-            record["C_configuation"] = record_object.get_C_configuration()
-            record["C_IRC"] = record_object.get_C_IRC()
-            record["C_spare_part"] = record_object.get_C_spare_part()
 
-            upload_PAP_string = upload_PAP_string + f'{record["HDV"]}~{record["config_datetime"]}~{record["M_programmed_date"]}~{record["M_software_ID"]}~{record["M_board_ID"]}~{record["M_functonality"]}~{record["M_configuation"]}\
+            if record_object.get_multichannel():
+                record["C_programmed_date"] = record_object.get_C_programmed_date().strftime(r'%Y-%m-%d') 
+                # record["C_config_actor"] = actors[record_object.get_C_programmed_actor()]
+                record["C_software_ID"] = software[record_object.get_C_programmed_software()]
+                record["C_board_ID"] = boards[record_object.get_C_programmed_board()]
+                record["C_functonality"] = record_object.get_C_functionality()
+                record["C_configuation"] = record_object.get_C_configuration()
+                record["C_IRC"] = record_object.get_C_IRC()
+                record["C_spare_part"] = record_object.get_C_spare_part()
+            else:
+                record["C_programmed_date"], record["C_software_ID"], record["C_board_ID"], record["C_functonality"], record["C_configuation"], record["C_IRC"], record["C_spare_part"] = '1000-01-01 00:00:00', None, None, None, None, 0, 0
+            
+            upload_KAM_string = upload_KAM_string + f'{record["HDV"]}~{record["config_datetime"]}~{record["M_programmed_date"]}~{record["M_software_ID"]}~{record["M_board_ID"]}~{record["M_functonality"]}~{record["M_configuation"]}\
                 ~{record["M_IRC"]}~{record["M_spare_part"]}~{record["C_programmed_date"]}~{record["C_software_ID"]}~{record["C_board_ID"]}~{record["C_functonality"]}~{record["C_configuation"]}~{record["C_IRC"]}\
                 ~{record["C_spare_part"]}' + '\n'
 
@@ -214,14 +218,14 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
         print('Chyba 117: Zlyhanie konverzie reťazca na StringIO. Spracované súbory sú zálohované. Ukončujem nahrávanie')
         return None
 
-    try:
-        cursor.copy_from(upload_PAP_file, "Program", sep='~', columns=('HDV_ID', 'PAP_datetime', 'Compilation_date', 'Actor_ID', 'Board_ID', 'Checksum_Flash', 'Checksum_EEPROM', 'Software_ID', 'Active', 'Path_ID', 'Processed_datetime'))
-        cursor.copy_from(upload_PAP_file, "Configuration", sep='~', columns=('HDV_ID', 'Config_datetime', 'M_programmed_date', 'M_software_ID', 'M_board_ID', 'M_functonality', 'M_configuation', 'M_IRC', 'M_spare_part', 'C_programmed_date', 'C_software_ID', 'C_board_ID', 'C_functonality', 'C_configuation', 'C_IRC', 'C_spare_part'))
+    # try:
+    cursor.copy_from(upload_PAP_file, "Program", sep='~', columns=('HDV_ID', 'PAP_datetime', 'Compilation_date', 'Actor_ID', 'Board_ID', 'Checksum_Flash', 'Checksum_EEPROM', 'Software_ID', 'Active', 'Path_ID', 'Processed_datetime'))
+    cursor.copy_from(upload_KAM_file, "Configuration", sep='~', columns=('HDV_ID', 'Config_datetime', 'M_programmed_date', 'M_software_ID', 'M_board_ID', 'M_functionality', 'M_configuration', 'M_IRC', 'M_spare_part', 'C_programmed_date', 'C_software_ID', 'C_board_ID', 'C_functionality', 'C_configuration', 'C_IRC', 'C_spare_part'))
     
-    except:
-        conn.rollback()
-        print('Chyba 118: Zlyhanie kopírovania súboru (inštancie StringIO) do databázy. Spracované súbory sú zálohované. Ukončujem nahrávanie')
-        return None
+    # except:
+    #     conn.rollback()
+    #     print('Chyba 118: Zlyhanie kopírovania súboru (inštancie StringIO) do databázy. Spracované súbory sú zálohované. Ukončujem nahrávanie')
+    #     return None
     
     
     conn.commit()
