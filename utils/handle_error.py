@@ -21,7 +21,7 @@ regex_expressions = {
 
 
 def error_handler(record_object:list, error_number:int, error_message:str, required:bool,queried_string:str="N/A", requirement:str=regex_expressions['any']) -> 0 or str:
-    selection_menu="------------------------- \n Vyberte si z nasledujúcich príkazov: \n Print záznamu -> P \n Nahradenie problémovej hodnoty -> I \n Preskočiť záznam -> ENTER \n Vynechať hodnotu v zázname -> E \n  Ukončiť spracovanie a uložiť záznamy -> ESC \n ------------------------- \n"
+    selection_menu="-------------------------------------------------- \n Vyberte si z nasledujúcich príkazov: \n Print záznamu -> P \n Nahradenie problémovej hodnoty -> I \n Preskočiť záznam -> ENTER \n Vynechať hodnotu v zázname -> E \n  Ukončiť spracovanie a uložiť záznamy -> ESC \n -------------------------------------------------- \n"
     print("Pri spracovaní záznamu vznikla chyba: {error_number}. \nPopis chyby: {error_message} \nProblematický reťazec: {queried_string} \n".format(queried_string=queried_string, error_message=error_message,error_number=error_number))
     print(selection_menu)
     while True:

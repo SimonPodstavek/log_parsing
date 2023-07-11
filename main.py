@@ -11,7 +11,7 @@ import pickle
 from classes.log_classes import *
 from classes.safebytes_coordinates import *
 from utils.handle_error import *
-# from upload_records import upload_records
+from session.upload_records import recover_files 
 
 failues = {
 
@@ -375,6 +375,8 @@ def create_pap_record_object(record:list, path:str)->None or list:
                 else:
                     failues['programmed_date_PAP1']+=1
                     return None
+            else:
+                record_object.set_datetime(header_pap_datetime)
         else:
             record_object.set_datetime(header_pap_datetime)
     except:
@@ -784,7 +786,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         record_object.set_C_programmed_date(C_response)
 
     #Find KAM spare part 
-    M_response = None
+    M_response = False
     C_response = None
     parameter_found = False
     try:
@@ -818,10 +820,10 @@ def create_kam_record_object(record:list, path:str)->None or list:
         else:
             return None
 
-        record_object.set_M_spare_part(M_response)
-        record_object.set_C_spare_part(C_response)
     except:
         pass
+    record_object.set_M_spare_part(M_response)
+    record_object.set_C_spare_part(C_response)
 
 
     # Find KAM wheel_diameter 
@@ -888,9 +890,25 @@ def create_kam_record_object(record:list, path:str)->None or list:
 
 def main():
 
+    starting_path = ''
+    def select_software_mode():
+        nonlocal starting_path
 
-    
-    starting_path = abspath(join(dirname(__file__), '../data/operation logs/'))
+        print('\nSpracovanie výstupov MAP. \nPre spracovanie súborov typu PAP, KAM alebo kamw stlačte: P\nPre nahratie zálohovaných spracovanch súborov do databázy stlačte: B\nPre ukončenie programu stlačte ENTER')
+        software_mode = input().lower()
+
+        if software_mode == 'p':
+            starting_path = input(r'Zadajte koreňový adresár napr. C:\User\Admin\Document: ')
+        elif software_mode == 'b':
+                recover_files()
+                exit()
+        elif software_mode == '':
+            exit()
+        else:
+            print('Klávesa nie je platná, zadajte ju prosím znovu.')
+            select_software_mode()
+    select_software_mode()
+
     print("Začínam spracovávať súbory v adresári: {}".format(starting_path))
    
     paths=[]
@@ -901,8 +919,8 @@ def main():
                     paths.append(join(root,file))
 
     if len(paths) == 0:
-        print("Chyba 102: V adresári {} sa nenachádzajú žiadne súbory.".format(starting_path))
-        return 102
+        print("Chyba 102: V adresári {} sa nenachádzajú žiadne súbory.\nUkončujem program".format(starting_path))
+        return None
 
     file_object_collection, failed_files = collect_records_from_files(paths)
     number_of_records = sum(file.get_length() for file in file_object_collection)

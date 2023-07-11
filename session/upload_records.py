@@ -4,6 +4,7 @@ import time
 from sys import exit
 import pickle
 from os.path import abspath, dirname, join
+import os
 import io
 
 
@@ -16,9 +17,11 @@ import classes
 
 
 
+
+
 # This module uploads missing found parameters to database and returns their IDs
 def upload_unique_and_add_foreign_keys(absent_parameters: set,table_name: str, cursor, selected_column:str) -> None:
-    # try:
+    try:
         query = sql.SQL('SELECT MAX({id}) FROM {table_name};').format(id = sql.Identifier('ID'), table_name = sql.Identifier(table_name))
         cursor.execute(query)
         last_id = cursor.fetchone()[0]
@@ -32,13 +35,13 @@ def upload_unique_and_add_foreign_keys(absent_parameters: set,table_name: str, c
         
         data_file = io.StringIO(data)
 
-        cursor.copy_from(data_file, table_name, sep='~', columns=('ID', selected_column))
-
-
+        cursor.copy_from(data_file, table_name, sep='~', null='None', columns=('ID', selected_column))
         return dict(zip(absent_parameters,range(last_id,last_id+len(absent_parameters)))) 
-    # except:
-    #     print("Chyba pri pridávaní chýbajúcich záznamov")
-    #     return None
+    except:
+        print("Chyba 119: Pri pridávaní parmetrov do databáze nastala chyba.")
+        return None
+
+
 
 
 
@@ -55,10 +58,11 @@ def download_data_as_dict(table:sql.Identifier, column:sql.Identifier, cursor) -
 
 
 
+
+
+
 parsing_start_time = time.perf_counter()
 def upload_records(records:list, total_number_of_records:int, records_with_invalid_expression:int) -> None:
-
-
     #check if there are any records to be uploaded
     number_of_satisfying_records = len(records)
     if number_of_satisfying_records == 0: 
@@ -67,9 +71,19 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
            
     #output stats   
     print("-"*80)
-    with open('temp/processed_records.pickle', 'wb') as file:
-        pickle.dump(records, file)
-        print('Spracované zázamy sú zálohované. Cesta: {}\n'.format(abspath(join(dirname(__file__), '/temp/processed_records.pickle'))) )
+
+
+    try:
+        stats = {'total_number_of_records' : total_number_of_records, 'records_with_invalid_expression' : records_with_invalid_expression}
+        with open(abspath(join(dirname(__file__), '../temp/stats.pickle')), 'wb') as file:
+            pickle.dump(stats, file)
+        with open(abspath(join(dirname(__file__), '../temp/processed_records.pickle')), 'wb') as file:
+            pickle.dump(records, file)
+            print('Spracované zázamy sú zálohované. Cesta: {}\n'.format(abspath(join(dirname(__file__), '../temp/processed_records.pickle'))))
+    except:
+        print("Chyba 120: Spracované súbory nebolo možné zálohovať. Uistite sa, že má program dostatočné povolenia pre vytváranie súborov.")
+
+
 
     end_time = time.perf_counter()
     print("čas spracovania: {} sekúnd \n".format(end_time-parsing_start_time))
@@ -88,7 +102,6 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
         try:
             nonlocal paths, existing_database_paths, actors, boards, HDV, software
             paths = download_data_as_dict(sql.Identifier("Path"), sql.Identifier("Path"), cursor)
-            existing_database_paths = paths.copy()
             actors = download_data_as_dict(sql.Identifier("Actor"), sql.Identifier("Actor_key"), cursor)
             boards = download_data_as_dict(sql.Identifier("Board"), sql.Identifier("Board_version"), cursor)
             HDV = download_data_as_dict(sql.Identifier("HDV"), sql.Identifier("HDV"), cursor)
@@ -130,19 +143,21 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
     absent_boards = set(absent_boards) - set(boards.keys())
     absent_software = set(absent_software) - set(software.keys())
 
+
     #Upload the above found sets and associate them with IDs. Return dictionary containing IDs and parameters. 
     #Update existing local parameters to represent new database status
-    actors.update(upload_unique_and_add_foreign_keys(absent_actors, "Actor", cursor, "Actor_key"))
-    paths.update(upload_unique_and_add_foreign_keys(absent_paths, "Path", cursor, "Path"))
-    boards.update(upload_unique_and_add_foreign_keys(absent_boards, "Board", cursor, "Board_version"))
-    HDV.update(upload_unique_and_add_foreign_keys(absent_HDV, "HDV", cursor, "HDV"))
-    software.update(upload_unique_and_add_foreign_keys(absent_software, "Software", cursor, "Version"))
 
+    try:
+        actors.update(upload_unique_and_add_foreign_keys(absent_actors, "Actor", cursor, "Actor_key"))
+        paths.update(upload_unique_and_add_foreign_keys(absent_paths, "Path", cursor, "Path"))
+        boards.update(upload_unique_and_add_foreign_keys(absent_boards, "Board", cursor, "Board_version"))
+        HDV.update(upload_unique_and_add_foreign_keys(absent_HDV, "HDV", cursor, "HDV"))
+        software.update(upload_unique_and_add_foreign_keys(absent_software, "Software", cursor, "Version"))
+        conn.commit()
+    
+    except:
+        conn.rollback()
 
-    
-    
-    # conn.rollback()
-    conn.commit()
 
     #upload records
 
@@ -150,11 +165,12 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
     upload_PAP_string = ''
     upload_KAM_string = ''
 
+    uploaded_records_counter = 0
     for i,record_object in enumerate(records):
         record = {}
-        # if record['Path'] in existing_database_paths:
-        #     print(f'Nájdený záznam s duplicitnou cestou k súboru: {record["Path"]} prerušujem nahrávanie, spracované súbory sú uložené')
-        #     exit()
+        if record_object.get_path() in paths:
+            print(f'Nájdený záznam s duplicitnou cestou k súboru: {record_object.get_path()} prerušujem nahrávanie.\nUkončujem program')
+            exit()
 
         record["Path"] = paths[record_object.get_path()]
         record["HDV"] = HDV[record_object.get_HDV()]
@@ -163,7 +179,9 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
 
         if isinstance(record_object, classes.log_classes.PAPRecordBuilder):
             if record_object.get_compilation_date() is not None:
-                record["Compilation_date"] = record_object.get_compilation_date().strftime(r'%Y-%m-%d') 
+                record["Compilation_date"] = record_object.get_compilation_date().strftime(r'%Y-%m-%d')
+            else:
+                record["Compilation_date"] = '1970-01-01'
 
             record["Datetime"] = record_object.get_datetime().strftime(r'%Y-%m-%d %H:%M:%S') 
             record["Processed_datetime"] = datetime.now().strftime(r'%Y-%m-%d %H:%M:%S') 
@@ -211,27 +229,29 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
             continue
 
 
+        uploaded_records_counter += 1
+
     try:
         upload_PAP_file = io.StringIO(upload_PAP_string)
         upload_KAM_file = io.StringIO(upload_KAM_string)
     except:
-        print('Chyba 117: Zlyhanie konverzie reťazca na StringIO. Spracované súbory sú zálohované. Ukončujem nahrávanie')
+        print('Chyba 117: Zlyhanie konverzie reťazca na StringIO. Ukončujem nahrávanie')
         return None
+    
 
-    # try:
-    cursor.copy_from(upload_PAP_file, "Program", sep='~', columns=('HDV_ID', 'PAP_datetime', 'Compilation_date', 'Actor_ID', 'Board_ID', 'Checksum_Flash', 'Checksum_EEPROM', 'Software_ID', 'Active', 'Path_ID', 'Processed_datetime'))
-    cursor.copy_from(upload_KAM_file, "Configuration", sep='~', columns=('HDV_ID', 'Config_datetime', 'M_programmed_date', 'M_software_ID', 'M_board_ID', 'M_functionality', 'M_configuration', 'M_IRC', 'M_spare_part', 'C_programmed_date', 'C_software_ID', 'C_board_ID', 'C_functionality', 'C_configuration', 'C_IRC', 'C_spare_part'))
+    try:
+        cursor.copy_from(upload_PAP_file, "Program", sep='~', null='None', columns=('HDV_ID', 'PAP_datetime', 'Compilation_date', 'Actor_ID', 'Board_ID', 'Checksum_Flash', 'Checksum_EEPROM', 'Software_ID', 'Active', 'Path_ID', 'Processed_datetime'))
+        cursor.copy_from(upload_KAM_file, "Configuration", sep='~', null='None', columns=('HDV_ID', 'Config_datetime', 'M_programmed_date', 'M_software_ID', 'M_board_ID', 'M_functionality', 'M_configuration', 'M_IRC', 'M_spare_part', 'C_programmed_date', 'C_software_ID', 'C_board_ID', 'C_functionality', 'C_configuration', 'C_IRC', 'C_spare_part'))
+        conn.commit()
+    except:
+        conn.rollback()
+        print('Chyba 118: Zlyhanie kopírovania súboru (inštancie StringIO) do databázy. Ukončujem program.')
+        return None
     
-    # except:
-    #     conn.rollback()
-    #     print('Chyba 118: Zlyhanie kopírovania súboru (inštancie StringIO) do databázy. Spracované súbory sú zálohované. Ukončujem nahrávanie')
-    #     return None
     
-    
-    conn.commit()
-    print("Záznamy boli úspešne uložené do databázy")
+    print(f"\nDo databázy bolo nahraných {uploaded_records_counter} súborov., čo tvorí {uploaded_records_counter/number_of_satisfying_records*100}% spracovaných záznamov")
 
-    print('Zatváram reláciu')
+    print('Ukončujem reláciu')
     cursor.close()
     conn.close()
 
@@ -239,3 +259,28 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
     input()
 
     return None    
+
+
+
+
+def recover_files() -> None:
+        stats_path = abspath(join(dirname(__file__), '../temp/stats.pickle'))
+        record_path = abspath(join(dirname(__file__), '../temp/processed_records.pickle'))
+
+        if not os.path.isfile(stats_path) or not os.path.isfile(record_path):
+            print(f'Chyba 121: Záloha neexistuje. Hľadaná cesta: {stats_path}, {record_path}.\nUkončujem program')
+            exit()
+
+        try:
+            with open(stats_path, 'rb') as file:
+                stats = pickle.load(file)
+
+            with open(record_path, 'rb') as file:
+                records = pickle.load(file)
+        except:
+            print("Chyba 101: Program nemá povolenia na čítanie zálohy.\nUkončujem program")
+            exit()
+            
+        upload_records(records, stats['total_number_of_records'], stats['records_with_invalid_expression'])
+        
+        
