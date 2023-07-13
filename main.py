@@ -4,6 +4,7 @@ from os import path, access, R_OK, listdir, walk
 from os.path import abspath, dirname, join, isfile, isdir, realpath
 from datetime import datetime, date
 import datetime
+import csv
 
 from pprint import pprint
 import pickle
@@ -58,10 +59,32 @@ regex_expressions = {
     'any' : re.compile(r'')
 }
 
+# Load all regex
 with open('regex_constructor/regex_expressions.pickle', 'rb') as file:
     regex_expressions = pickle.load(file)
     for key in regex_expressions.keys():
         regex_expressions[key] = re.compile(regex_expressions[key])
+
+
+def write_inconsistent_record_to_csv(inconsistency:str, parameter_safebyes:str, parameter_regex:str, path:str, timestamp:str) -> None:
+    first_line = True
+    if isfile('../Nekonzistentne zaznamy.csv'):
+        first_line = False
+
+    try:
+        with open('../Nekonzistentne zaznamy.csv', 'a', newline='' ) as file:
+            writer = csv.writer(file)
+            if first_line:
+                writer.writerow(['Nekonzistentná položka', 'Verzia safebytes', 'Verzia regex', 'Cesta', 'Časová známka']) 
+            writer.writerow([inconsistency, parameter_safebyes, parameter_regex, path, timestamp])
+    except:
+        print('Chyba 122: Pri zapisovaní nekonzistentného záznamu nastala chyba')
+
+    file.close()
+
+
+
+
 
 
 
@@ -78,29 +101,32 @@ def collect_records_from_files(list_of_files:dict)->tuple:
     #Assign list of all files to valid_files, so that we can remove erroneous files from the list later
     valid_files=list_of_files.copy()
 
+
     #check if files exist
-    for _,file in enumerate(list_of_files):
-        if not path.exists(file):
-            valid_files.remove(file)
-            print("Chyba 100: Súbor {} neexistuje.".format(file))
+    for _,path in enumerate(list_of_files):
+        if not path.exists(path):
+            valid_files.remove(path)
+            print("Chyba 100: Súbor {} neexistuje.".format(path))
             continue
 
         # check if user has sufficient permissions to read contents of a file
-        if not access(file,R_OK):
-            valid_files.remove(file)
-            print("Chyba 101: K suboru {} nemá klient dostatočné povolenia na čítanie súboru.".format(file))
+        if not access(path,R_OK):
+            valid_files.remove(path)
+            print("Chyba 101: K suboru {} nemá klient dostatočné povolenia na čítanie súboru.".format(path))
             continue
+
 
     #If there aren't any valid files, exit
     if len(valid_files) == 0:
         print("Chyba 102: V zvolenom adresári sa nenachádzajú žiadne súbory.")
         sys.exit(102)
 
+
     #Read contents of all valid files
-    for i, file in enumerate(valid_files):
+    for i, path in enumerate(valid_files):
 
         file_decoded=False
-        with open(file, 'rb') as opened_file:
+        with open(path, 'rb') as opened_file:
             try:
                 #open file and try to decode its contents as UTF-16 or UTF-8
                 log=opened_file.read()
@@ -116,9 +142,10 @@ def collect_records_from_files(list_of_files:dict)->tuple:
                 file_decoded = False
         opened_file.close()
 
+
         #if decoding fails, try to decode as windows-1250
         if not file_decoded:
-            with open(file, 'r', encoding='windows-1250') as opened_file:
+            with open(path, 'r', encoding='windows-1250') as opened_file:
                 try:
                     log = opened_file.read()
                     file_decoded = True
@@ -126,7 +153,7 @@ def collect_records_from_files(list_of_files:dict)->tuple:
                     file_decoded = False
             opened_file.close()
         if not file_decoded:
-            print("Chyba 112: Pre súbor {} nebolo nájdené podporované enkódovanie. FILE_SKIPPED".format(file))
+            print("Chyba 112: Pre súbor {} nebolo nájdené podporované enkódovanie. FILE_SKIPPED".format(path))
             failed_files_counter+=1
             continue
         
@@ -135,16 +162,16 @@ def collect_records_from_files(list_of_files:dict)->tuple:
         #the following regex expressions are used to determine the type of log file
         #after the type is determined, the contents of the file are split into individual records, removing separators, keeping log header
         #PAP log
-        if re.compile(r'.*pap.*\.(log|txt)').search(file.lower()):
+        if re.compile(r'.*pap.*\.(log|txt)').search(path.lower()):
             records_list=log_contents.split('-'*80)
 
         #KAM log or kamw log
-        elif re.compile(r'.*kam.*\.(log|txt)').search(file.lower()):
+        elif re.compile(r'.*kam.*\.(log|txt)').search(path.lower()):
             records_list = re.findall(r'#{60}\r?\n(.*)\r?\n#{60}([^#]*)',log_contents)
             records_list = [''.join(x) for x in records_list]
                 
         else:
-            print("Chyba 113: Súbor {} nie je log typu KAM, kamw ani PAP. FILE_SKIPPED".format(file))
+            print("Chyba 113: Súbor {} nie je log typu KAM, kamw ani PAP. FILE_SKIPPED".format(path))
             failed_files_counter+=1
             continue
 
@@ -155,10 +182,10 @@ def collect_records_from_files(list_of_files:dict)->tuple:
         #Remove records that are shorter than 151 characters
         records_list = [x for x in records_list if len(x.strip()) > 150] 
         
-        file = path.relpath(file, abspath(join(dirname(__file__),'../data/operation logs')))
-        file = file.replace('\\', '/').lower()
+        path = path.relpath(path, abspath(join(dirname(__file__),'../data/operation logs')))
+        path = path.replace('\\', '/').lower()
 
-        file_object_collection.append(File(records_list, file))
+        file_object_collection.append(File(records_list, path))
 
 
     return file_object_collection, failed_files_counter
@@ -169,13 +196,8 @@ def create_pap_record_object(record:list, path:str)->None or list:
     # Create new empty instance of record class
     record_object = PAPRecordBuilder()
     record_object.set_content(record)
-
     safebytes = None
-
     record_object.set_path(path.path)
-
-
-
 
     #Find timestamp programmed
     parameter_found=False
@@ -343,8 +365,9 @@ def create_pap_record_object(record:list, path:str)->None or list:
         safebytes_software = str(safebytes_softwarfe_label)+'_'+safebytes_softwarfe_version
         if software != safebytes_software and software is not None:
 
+            write_inconsistent_record_to_csv('Verzia SW', safebytes_software, software, record_object.get_path(), datetime.date(header_pap_datetime)) 
             response = error_handler(record_object, 115,f'Chyba 115: Verzia softvéru uložená v safebytes sa nezhoduje s verziou vyhľadanou cez regex. Safebytes: {safebytes_software} | Regex: {software}. \n\r\
-                        Pre uloženie verzie zo safebyts napíšte \"safebytes\", pre regex napíšte \"regex\". Ak si prajete záznam preskočiť, stlačte enter ',True, "N/A",re.compile(r'($^)|(regex)|(safebytes)'))
+                        Pre uloženie verzie zo safebytes stlačte I a napíšte \"safebytes\", pre regex napíšte \"regex\". Ak si prajete záznam preskočiť, stlačte enter ',True, "N/A",re.compile(r'($^)|(regex)|(safebytes)'))
             if response == 'regex':
                 record_object.set_software(software)
             elif response == 'safebytes':
@@ -366,8 +389,9 @@ def create_pap_record_object(record:list, path:str)->None or list:
             safebyte_pap_date = datetime(year, month, day)
 
             if datetime.date(safebyte_pap_date) != datetime.date(header_pap_datetime):
+                write_inconsistent_record_to_csv('Dátum programovania', datetime.date(safebyte_pap_date), datetime.date(header_pap_datetime), record_object.get_path(), datetime.date(header_pap_datetime)) 
                 response = error_handler(record_object, 116,f'Chyba 116: Dátum uložený v safebytes sa nezhoduje s dátumom vyhľadaným cez regex. Safebytes: {datetime.date(safebyte_pap_date)} | Regex: {datetime.date(header_pap_datetime)} \n\r\
-                            Pre uloženie verzie zo safebyts napíšte \"safebytes\", pre regex napíšte \"regex\". Ak si prajete záznam preskočiť, stlačte enter ',True, "N/A",re.compile(r'($^)|(regex)|(safebytes)'))
+                            Pre uloženie verzie zo safebytes stlačte I a napíšte \"safebytes\", pre regex napíšte \"regex\". Ak si prajete záznam preskočiť, stlačte enter ',True, "N/A",re.compile(r'($^)|(regex)|(safebytes)'))
                 if response == 'regex':
                     record_object.set_datetime(header_pap_datetime)
                 elif response == 'safebytes':
@@ -402,17 +426,20 @@ def create_pap_record_object(record:list, path:str)->None or list:
     board = safebytes[safebyte_locations[generation][version].get_board()]
     board = board[::-1]
     board = str(int(''.join(board),16))
-    board = ''.join(('V', board.zfill(8)))
+    if len(board) < 7:
+        board = ''.join(('V', board.zfill(6)))
     record_object.set_board(board)
 
     #Get Checksum Flash from safebytes
     checksum_Flash = safebytes[safebyte_locations[generation][version].get_checksum_Flash()]
     checksum_Flash = ''.join(checksum_Flash)
+    checksum_Flash = 'x'.join(['0',checksum_Flash])
     record_object.set_checksum_Flash(checksum_Flash)
 
     #Get Checksum EEPROM from safebytes
     checksum_EEPROM = safebytes[safebyte_locations[generation][version].get_checksum_EEPROM()]
     checksum_EEPROM = ''.join(checksum_EEPROM)
+    checksum_EEPROM = 'x'.join(['0',checksum_EEPROM])
     record_object.set_checksum_EEPROM(checksum_EEPROM)
 
     satisfying_records.append(record_object)
@@ -446,7 +473,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
 
     if len(re.findall(regex_expressions['KAM_software'], record)) == 2:
         multichannel = True
-    record_object.set_multichannel = multichannel
+    record_object.set_multichannel(multichannel)
 
 
     #Find KAM Config date
@@ -895,14 +922,14 @@ def main():
         nonlocal starting_path
 
         print('\nSpracovanie výstupov MAP. \nPre spracovanie súborov typu PAP, KAM alebo kamw stlačte: P\nPre nahratie zálohovaných spracovanch súborov do databázy stlačte: B\nPre ukončenie programu stlačte ENTER')
-        software_mode = input().lower()
+        software_mode = getch().lower()
 
-        if software_mode == 'p':
+        if software_mode == b'p':
             starting_path = input(r'Zadajte koreňový adresár napr. C:\User\Admin\Document: ')
-        elif software_mode == 'b':
+        elif software_mode == b'b':
                 recover_files()
                 exit()
-        elif software_mode == '':
+        elif software_mode == b'\r':
             exit()
         else:
             print('Klávesa nie je platná, zadajte ju prosím znovu.')
@@ -934,7 +961,7 @@ def main():
     for file in file_object_collection:
         for record in file.get_records():
             response = None
-            if any(invalid_expression in  record.lower() for invalid_expression in ['mazanie','prerušená', 'chyba', 'porušená', 'neplatná', 'error', 'interrupted', 'broken']):
+            if any(invalid_expression in  record.lower() for invalid_expression in ['mazanie','prerušená', 'chyba', 'porušená', 'neplatná', 'error', 'interrupted', 'broken', 'nenainštalované']):
                 records_with_invalid_expression += 1
                 continue
             if 'pap' in  file.get_path().lower():

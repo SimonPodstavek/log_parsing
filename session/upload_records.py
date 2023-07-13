@@ -77,7 +77,7 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
         stats = {'total_number_of_records' : total_number_of_records, 'records_with_invalid_expression' : records_with_invalid_expression}
         with open(abspath(join(dirname(__file__), '../temp/stats.pickle')), 'wb') as file:
             pickle.dump(stats, file)
-        with open(abspath(join(dirname(__file__), '../temp/processed_records.pickle')), 'wb') as file:
+        with open(abspath(join(dirname(__file__), '../temp/LPTB.pickle')), 'wb') as file:
             pickle.dump(records, file)
             print('Spracované zázamy sú zálohované. Cesta: {}\n'.format(abspath(join(dirname(__file__), '../temp/processed_records.pickle'))))
     except:
@@ -86,22 +86,28 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
 
 
     end_time = time.perf_counter()
+    print('-'*80)
     print("čas spracovania: {} sekúnd \n".format(end_time-parsing_start_time))
     print("Spracované záznamy: {} / {} ".format(number_of_satisfying_records ,total_number_of_records))
     print("Nespracované záznamy: {} z toho platných: {}".format(total_number_of_records-number_of_satisfying_records, total_number_of_records-number_of_satisfying_records-records_with_invalid_expression))
-    print("Úspešnosť spracovania platných záznamov: {}%: ".format(100*number_of_satisfying_records/(total_number_of_records-records_with_invalid_expression)))
-
+    print("Úspešnosť spracovania platných záznamov: {}%:".format(100*number_of_satisfying_records/(total_number_of_records-records_with_invalid_expression)))
+    print('-'*80)
+    print("Inicializácia relácie s databázou")
     #create DB session
     cursor, conn = create_session()
     conn.autocommit = False
+    print("Inicializácia relácie s databázou: úspech")
+    print('-'*80)
 
-    paths, existing_database_paths, actors, boards, HDV, software = {}, {}, {}, {}, {}, {}
-
+    print('-'*80)
+    print("Sťahovanie parametrov z databázy")
+    paths, previous_database_paths, actors, boards, HDV, software = {}, {}, {}, {}, {}, {}
     #fetch data from DB
     def fetch_database_data():
         try:
-            nonlocal paths, existing_database_paths, actors, boards, HDV, software
+            nonlocal paths, previous_database_paths, actors, boards, HDV, software
             paths = download_data_as_dict(sql.Identifier("Path"), sql.Identifier("Path"), cursor)
+            previous_database_paths = paths.copy()
             actors = download_data_as_dict(sql.Identifier("Actor"), sql.Identifier("Actor_key"), cursor)
             boards = download_data_as_dict(sql.Identifier("Board"), sql.Identifier("Board_version"), cursor)
             HDV = download_data_as_dict(sql.Identifier("HDV"), sql.Identifier("HDV"), cursor)
@@ -116,6 +122,14 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
                 exit()
 
     fetch_database_data()
+
+    
+    print("Sťahovanie parametrov z databázy: úspech")
+    print('-'*80)
+
+    print('-'*80)
+    print("Vyhľadávanie chýbajúcich parametrov a nahrávananie do databázy")
+    
 
     # Create new set object as difference of extracted parameters and parameters found in database
     absent_paths, absent_HDV, absent_actors, absent_boards, absent_software = [], [], [], [], [] 
@@ -134,7 +148,9 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
             absent_boards.extend([record_object.get_M_programmed_board(), record_object.get_C_programmed_board()])
             absent_software.extend([record_object.get_M_programmed_software(), record_object.get_C_programmed_software()])
         else:
-            print('There has been a problem.')
+            print('Chyba 121: V procese kopírovania obsahu záznamových objektov do poľa došlu ku chybe')
+
+
 
     #Compute set difference between uploaded and local data (parameters)
     absent_paths = set(absent_paths) - set(paths.keys())
@@ -153,22 +169,28 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
         boards.update(upload_unique_and_add_foreign_keys(absent_boards, "Board", cursor, "Board_version"))
         HDV.update(upload_unique_and_add_foreign_keys(absent_HDV, "HDV", cursor, "HDV"))
         software.update(upload_unique_and_add_foreign_keys(absent_software, "Software", cursor, "Version"))
-        conn.commit()
-    
+        conn.commit()    
     except:
         conn.rollback()
+        print('Chyba 119: Ukončujem program')
+        exit()
+
+    print("Vyhľadávanie chýbajúcich parametrov a nahrávananie do databázy: úspech")
+    print('-'*80)
 
 
-    #upload records
-
+    print("Nahrávanie záznamov do databázy")
     # parsed_values will store content alongside foreign key references for each record
     upload_PAP_string = ''
     upload_KAM_string = ''
 
+    sclek=perf_counter()
+
     uploaded_records_counter = 0
-    for i,record_object in enumerate(records):
+    for record_object in records:
+
         record = {}
-        if record_object.get_path() in paths:
+        if record_object.get_path() in previous_database_paths:
             print(f'Nájdený záznam s duplicitnou cestou k súboru: {record_object.get_path()} prerušujem nahrávanie.\nUkončujem program')
             exit()
 
@@ -181,7 +203,7 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
             if record_object.get_compilation_date() is not None:
                 record["Compilation_date"] = record_object.get_compilation_date().strftime(r'%Y-%m-%d')
             else:
-                record["Compilation_date"] = '1970-01-01'
+                record["Compilation_date"] = 'None'
 
             record["Datetime"] = record_object.get_datetime().strftime(r'%Y-%m-%d %H:%M:%S') 
             record["Processed_datetime"] = datetime.now().strftime(r'%Y-%m-%d %H:%M:%S') 
@@ -190,8 +212,8 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
             record["Software"] = software[record_object.get_software()]
             record["checksum_Flash"] = record_object.get_checksum_Flash()
             record["checksum_EEPROM"] = record_object.get_checksum_EEPROM()
-            upload_PAP_string = upload_PAP_string + f'{record["HDV"]}~{record["Datetime"]}~{record["Compilation_date"]}~{record["Actor"]}~{record["Board"]}~{record["checksum_Flash"]}~{record["checksum_EEPROM"]}\
-                ~{record["Software"]}~True~{record["Path"]}~{record["Processed_datetime"]}' + '\n'
+            upload_PAP_string = ''.join([upload_PAP_string, f'{record["HDV"]}~{record["Datetime"]}~{record["Compilation_date"]}~{record["Actor"]}~{record["Board"]}~{record["checksum_Flash"]}~{record["checksum_EEPROM"]}\
+                ~{record["Software"]}~True~{record["Path"]}~{record["Processed_datetime"]}', '\n'])
 
         elif isinstance(record_object, classes.log_classes.KAMRecordBuilder):  
             record["config_datetime"] = record_object.get_config_datetime().strftime(r'%Y-%m-%d %H:%M:%S') 
@@ -220,15 +242,13 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
             else:
                 record["C_programmed_date"], record["C_software_ID"], record["C_board_ID"], record["C_functonality"], record["C_configuation"], record["C_IRC"], record["C_spare_part"] = '1000-01-01 00:00:00', None, None, None, None, 0, 0
             
-            upload_KAM_string = upload_KAM_string + f'{record["HDV"]}~{record["config_datetime"]}~{record["M_programmed_date"]}~{record["M_software_ID"]}~{record["M_board_ID"]}~{record["M_functonality"]}~{record["M_configuation"]}\
+            upload_KAM_string = ''.join([upload_KAM_string, f'{record["HDV"]}~{record["config_datetime"]}~{record["M_programmed_date"]}~{record["M_software_ID"]}~{record["M_board_ID"]}~{record["M_functonality"]}~{record["M_configuation"]}\
                 ~{record["M_IRC"]}~{record["M_spare_part"]}~{record["C_programmed_date"]}~{record["C_software_ID"]}~{record["C_board_ID"]}~{record["C_functonality"]}~{record["C_configuation"]}~{record["C_IRC"]}\
-                ~{record["C_spare_part"]}' + '\n'
+                ~{record["C_spare_part"]}~True~{record["Path"]}', '\n'])
 
 
         else:
             continue
-
-
         uploaded_records_counter += 1
 
     try:
@@ -241,16 +261,18 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
 
     try:
         cursor.copy_from(upload_PAP_file, "Program", sep='~', null='None', columns=('HDV_ID', 'PAP_datetime', 'Compilation_date', 'Actor_ID', 'Board_ID', 'Checksum_Flash', 'Checksum_EEPROM', 'Software_ID', 'Active', 'Path_ID', 'Processed_datetime'))
-        cursor.copy_from(upload_KAM_file, "Configuration", sep='~', null='None', columns=('HDV_ID', 'Config_datetime', 'M_programmed_date', 'M_software_ID', 'M_board_ID', 'M_functionality', 'M_configuration', 'M_IRC', 'M_spare_part', 'C_programmed_date', 'C_software_ID', 'C_board_ID', 'C_functionality', 'C_configuration', 'C_IRC', 'C_spare_part'))
+        cursor.copy_from(upload_KAM_file, "Configuration", sep='~', null='None', columns=('HDV_ID', 'Config_datetime', 'M_programmed_date', 'M_software_ID', 'M_board_ID', 'M_functionality', 'M_configuration', 'M_IRC', 'M_spare_part', 'C_programmed_date', 'C_software_ID', 'C_board_ID', 'C_functionality', 'C_configuration', 'C_IRC', 'C_spare_part', 'Active', 'Path_ID'))
         conn.commit()
     except:
         conn.rollback()
         print('Chyba 118: Zlyhanie kopírovania súboru (inštancie StringIO) do databázy. Ukončujem program.')
         return None
     
-    
-    print(f"\nDo databázy bolo nahraných {uploaded_records_counter} súborov., čo tvorí {uploaded_records_counter/number_of_satisfying_records*100}% spracovaných záznamov")
+    print("Nahrávanie záznamov do databázy: úspech")
+    print('-'*80)
+    print(perf_counter()-sclek)
 
+    print(f"\nDo databázy bolo nahraných {uploaded_records_counter} súborov., čo tvorí {uploaded_records_counter/number_of_satisfying_records*100}% spracovaných záznamov")
     print('Ukončujem reláciu')
     cursor.close()
     conn.close()
@@ -265,7 +287,7 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
 
 def recover_files() -> None:
         stats_path = abspath(join(dirname(__file__), '../temp/stats.pickle'))
-        record_path = abspath(join(dirname(__file__), '../temp/processed_records.pickle'))
+        record_path = abspath(join(dirname(__file__), '../temp/LPTB.pickle'))
 
         if not os.path.isfile(stats_path) or not os.path.isfile(record_path):
             print(f'Chyba 121: Záloha neexistuje. Hľadaná cesta: {stats_path}, {record_path}.\nUkončujem program')
