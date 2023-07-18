@@ -1,7 +1,7 @@
 import re
 import sys
 from os import path, access, R_OK, listdir, walk
-from os.path import abspath, dirname, join, isfile, isdir, realpath
+from os.path import abspath, dirname, join, isfile, isdir, relpath ,exists
 from datetime import datetime, date
 import datetime
 import csv
@@ -15,31 +15,29 @@ from utils.handle_error import *
 from session.upload_records import recover_files 
 
 failues = {
-
-'pap_timestamp': 0,
-'pap_sw': 0,
-'PAP_SW_detection': 0,
-'pap_safebytes': 0,
-'safebytes_version_encoding': 0,
-'PAP_regex_sw_doesnt_match': 0,
-'programmed_date_PAP1': 0,
-'programmed_date_PAP2': 0,
-'KAM_config_date': 0,
-'KAM_actor_M': 0,
-'KAM_actor_C': 0,
-'KAM_HDV': 0,
-'KAM_configuration_M': 0,
-'KAM_configuration_C': 0,
-'KAM_SW_M': 0,
-'KAM_SW_C': 0,
-'KAM_prog_actor_M': 0,
-'KAM_prog_actor_C': 0,
-'KAM_board_n_M': 0,
-'KAM_board_n_C': 0,
-'KAM_programmed_date_M': 0,
-'KAM_programmed_date_C': 0,
-'noname_SW': 0
-
+    'PAP_timestamp': 0,
+    'PAP_SW': 0,
+    'PAP_SW_detection': 0,
+    'PAP_safebytes': 0,
+    'safebytes_version_encoding': 0,
+    'PAP_regex_sw_doesnt_match': 0,
+    'PAP_programmed_date_1': 0,
+    'PAP_programmed_date_2': 0,
+    'KAM_config_date': 0,
+    'KAM_actor_M': 0,
+    'KAM_actor_C': 0,
+    'KAM_HDV': 0,
+    'KAM_configuration_M': 0,
+    'KAM_configuration_C': 0,
+    'KAM_SW_M': 0,
+    'KAM_SW_C': 0,
+    'KAM_prog__M': 0,
+    'KAM_prog_actor_C': 0,
+    'KAM_board_M': 0,
+    'KAM_board_C': 0,
+    'KAM_programmed_date_M': 0,
+    'KAM_programmed_date_C': 0,
+    'noname_SW': 0
 }
 
 # global record_object_collection
@@ -104,7 +102,7 @@ def collect_records_from_files(list_of_files:dict)->tuple:
 
     #check if files exist
     for _,path in enumerate(list_of_files):
-        if not path.exists(path):
+        if not exists(path):
             valid_files.remove(path)
             print("Chyba 100: Súbor {} neexistuje.".format(path))
             continue
@@ -125,11 +123,11 @@ def collect_records_from_files(list_of_files:dict)->tuple:
     #Read contents of all valid files
     for i, path in enumerate(valid_files):
 
-        file_decoded=False
+        file_decoded = False
         with open(path, 'rb') as opened_file:
             try:
                 #open file and try to decode its contents as UTF-16 or UTF-8
-                log=opened_file.read()
+                log = opened_file.read()
                 if log[0] == 255:
                     log = log.decode('utf-16')
                 
@@ -182,8 +180,8 @@ def collect_records_from_files(list_of_files:dict)->tuple:
         #Remove records that are shorter than 151 characters
         records_list = [x for x in records_list if len(x.strip()) > 150] 
         
-        path = path.relpath(path, abspath(join(dirname(__file__),'../data/operation logs')))
-        path = path.replace('\\', '/').lower()
+        path = '/'.join(path.split('\\')[-3:])
+
 
         file_object_collection.append(File(records_list, path))
 
@@ -220,7 +218,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
     if parameter_found == False:
             response = error_handler(record_object, 105,"V zadanom zázname neexistuje dátum a čas. Zadajte dátum a čas v formáte dd.mm.yyyy hh:mm:ss",True, "N/A",re.compile(r'\d{1,2}\.\d{1,2}\.\d{4}\s\d{1,2}:\d{1,2}:\d{1,2}'))
             if response == None:
-                failues['pap_timestamp']+=1
+                failues['PAP_timestamp']+=1
                 return None
             elif response == 111:
                 return 111
@@ -249,7 +247,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
         parameter_found = True
         record_object.set_software(response)
     except:
-        failues['pap_sw']+=1
+        failues['PAP_SW']+=1
         return None
 
 
@@ -316,7 +314,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
         
         response = error_handler(record_object, 105,"V zadanom zázname neexistujú safebytes. Zadajte safebytes",True, "N/A",re.compile(r'(?:[0-9A-F]{2} *)*'))
         if response == None:
-            failues['pap_safebytes'] += 1
+            failues['PAP_safebytes'] += 1
             return None
 
         elif response == 111:
@@ -397,21 +395,20 @@ def create_pap_record_object(record:list, path:str)->None or list:
                 elif response == 'safebytes':
                     record_object.set_datetime(datetime.combine(safebyte_pap_date, datetime.min.time()))
                 else:
-                    failues['programmed_date_PAP1']+=1
+                    failues['PAP_programmed_date_1']+=1
                     return None
             else:
                 record_object.set_datetime(header_pap_datetime)
         else:
             record_object.set_datetime(header_pap_datetime)
-    except:
-        failues['programmed_date_PAP2']+=1
+    except Exception:
+        failues['PAP_programmed_date_2']+=1
         return None
 
 
     #Get HDV from safebytes
     if safebyte_locations[generation][version].get_HDV() is not None:
         HDV = safebytes[safebyte_locations[generation][version].get_HDV()]
-        # HDV = [str(int(x, 16)) for x in HDV]
         HDV = ''.join(HDV)
         record_object.set_HDV(HDV)
     else:
@@ -419,6 +416,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
 
     #Get actor ID from safebytes
     actor = safebytes[safebyte_locations[generation][version].get_actor()]
+    actor = actor[::-1]
     actor = ''.join(actor)
     record_object.set_actor(int(actor,16))
     
@@ -446,7 +444,6 @@ def create_pap_record_object(record:list, path:str)->None or list:
 
 
     return None
-
 
 
 
@@ -564,13 +561,15 @@ def create_kam_record_object(record:list, path:str)->None or list:
         #Remove closing parenthesis if they do not match opening parenthesis
         response = response.strip()
         
+        response = response.replace('-', '')
+
         record_object.set_HDV(response)
         parameter_found=True
     except:
         pass
 
     if parameter_found == False:
-        response = error_handler(record_object, 105,"V zadanom zázname neexistuje HDV. Zadajte HDV vo formáte XXX-XXX alebo XXXX-XXX",True, "N/A",re.compile(r'.*-.*'))
+        response = error_handler(record_object, 105,"V zadanom zázname neexistuje HDV. Zadajte HDV vo formáte XXXXXX alebo XXXXXXX",True, "N/A",re.compile(r'.*-.*'))
         if response == None:
             failues['KAM_HDV']+=1
             return None
@@ -622,6 +621,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
     record_object.set_M_configuration(M_response)
     record_object.set_C_configuration(C_response)
     
+    
     # Find KAM Software
     parameter_found = False
     try:
@@ -636,8 +636,8 @@ def create_kam_record_object(record:list, path:str)->None or list:
         pass
 
     if parameter_found == False:
-        M_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza konfigurácia. Zadajte konfiguráciu pre kanál M",False, "N/A",re.compile(r'.*'))
-        C_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza konfigurácia. Zadajte konfiguráciu pre kanál C (Ak je totožna ako kanál M, zadajte \'-\'). ",False, "N/A",re.compile(r'.*'))
+        M_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza softvér. Zadajte softvér pre kanál M",False, "N/A",re.compile(r'.*'))
+        C_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza softvér. Zadajte softvér pre kanál C (Ak je totožna ako kanál M, zadajte \'-\'). ",False, "N/A",re.compile(r'.*'))
         if M_response == None:
             failues['KAM_SW_M']+=1
             return None
@@ -716,7 +716,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         M_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza číslo dosky. Zadajte číslo dosky pre kanál M",False, "N/A",re.compile(r'.*'))
         C_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza číslo dosky. Zadajte číslo dosky pre kanál C (Ak je totožný ako kanál M, zadajte \'-\'). ",False, "N/A",re.compile(r'.*'))
         if M_response == None:
-            failues['KAM_board_n_M']+=1
+            failues['KAM_board_M']+=1
             return None
         elif M_response == 111:
             return 111
@@ -724,7 +724,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         if not multichannel:
             pass
         if C_response == None:
-            failues['KAM_board_n_C']+=1
+            failues['KAM_board_C']+=1
             return None
         elif C_response == 111:
             return 111
@@ -835,9 +835,8 @@ def create_kam_record_object(record:list, path:str)->None or list:
         elif M_response in translations_of_word_no:
             M_response = False
         else:
-            print("Nemožno zvalidovať náhradnú časť pre kanál M")
-            return None
-        
+            print("Nemožno zvalidovať náhradnú časť pre kanál M. Záznam je preskočený")
+            
         if C_response is None:
             pass
         elif C_response in translations_of_word_yes:
@@ -849,6 +848,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
 
     except:
         pass
+
     record_object.set_M_spare_part(M_response)
     record_object.set_C_spare_part(C_response)
 
@@ -918,14 +918,24 @@ def create_kam_record_object(record:list, path:str)->None or list:
 def main():
 
     starting_path = ''
+    minimal_date =  None
     def select_software_mode():
-        nonlocal starting_path
+        nonlocal starting_path, minimal_date
 
         print('\nSpracovanie výstupov MAP. \nPre spracovanie súborov typu PAP, KAM alebo kamw stlačte: P\nPre nahratie zálohovaných spracovanch súborov do databázy stlačte: B\nPre ukončenie programu stlačte ENTER')
+
         software_mode = getch().lower()
 
         if software_mode == b'p':
+            # print('-'*80)
+            # print("Uistite sa, že všetky súbory majú rovnakú hĺbku v rámci adresára.\n Súbory s cestou 2010/01 a 2020/01 = OK.2010/01 a 2020/01 ")
             starting_path = input(r'Zadajte koreňový adresár napr. C:\User\Admin\Document: ')
+            minimal_date = input(r'Zadajte minimálny dátum záznamu pre spracovanie vo formáte YYYY/MM napr. 2000/01: ') 
+            try:
+                minimal_date = datetime.strptime(minimal_date, '%Y/%m')
+            except Exception:
+                print("Chyba 123: Zadaný dátum nespĺňa požiadavky na formát (YYYY/MM).")
+                select_software_mode()
         elif software_mode == b'b':
                 recover_files()
                 exit()
@@ -938,12 +948,15 @@ def main():
 
     print("Začínam spracovávať súbory v adresári: {}".format(starting_path))
    
-    paths=[]
+
+   
+    paths = []
     for root, directories, selected_files in walk(starting_path):
         if len(selected_files) != 0:
             for i, file in enumerate(selected_files):
-                if regex_expressions['any'].search(file) is not None:
-                    paths.append(join(root,file))
+                if datetime.strptime('/'.join(root.split('\\')[-2:]), '%Y/%m') < minimal_date:
+                    continue
+                paths.append(join(root,file))
 
     if len(paths) == 0:
         print("Chyba 102: V adresári {} sa nenachádzajú žiadne súbory.\nUkončujem program".format(starting_path))
@@ -976,10 +989,10 @@ def main():
                 pass
             
             if response == 111:
-                upload_records(satisfying_records,number_of_records-KAM_removed_duplicit_records, records_with_invalid_expression)
+                upload_records(satisfying_records,number_of_records-KAM_removed_duplicit_records, records_with_invalid_expression, failues)
                 break
             
-    upload_records(satisfying_records,number_of_records-KAM_removed_duplicit_records, records_with_invalid_expression)
+    upload_records(satisfying_records,number_of_records-KAM_removed_duplicit_records, records_with_invalid_expression, failues)
 
 if __name__ == '__main__':
     main()

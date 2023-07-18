@@ -13,10 +13,11 @@ def create_session():
             user="ovypt1",
             password=os.getenv("HMH_AZURE_LOG_PSSWD")
         )
-        
-
         cursor = conn.cursor()
         return cursor, conn
-    except:
-        print("Chyba 109: Nepodarilo sa utvoriť reláciu medzi databázou a klientom.")
+    except psycopg2.OperationalError  as err:
+        print(f"Chyba 109: Nepodarilo sa utvoriť reláciu medzi databázou a klientom.\n psycopg2: {err}")
+        exit()
+    else:
+        print("Chyba 109: Nepodarilo sa utvoriť reláciu medzi databázou a klientom.\n psycopg2: {e}")
         exit()

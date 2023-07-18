@@ -5,6 +5,7 @@ import time
 import sys
 from session.upload_records import upload_records
 
+
 regex_expressions = {
     'supported_file_types' : re.compile(r'.*_PAP_.*\.log'),
     'SW_version_3G' : re.compile(r'^[A-Z]{4}_\d$'),
