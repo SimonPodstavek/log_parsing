@@ -14,7 +14,7 @@ from classes.safebytes_coordinates import *
 from utils.handle_error import *
 from session.upload_records import recover_files 
 
-failues = {
+failures = {
     'PAP_timestamp': 0,
     'PAP_SW': 0,
     'PAP_SW_detection': 0,
@@ -197,6 +197,9 @@ def create_pap_record_object(record:list, path:str)->None or list:
     safebytes = None
     record_object.set_path(path.path)
 
+
+
+
     #Find timestamp programmed
     parameter_found=False
     try:
@@ -218,7 +221,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
     if parameter_found == False:
             response = error_handler(record_object, 105,"V zadanom zázname neexistuje dátum a čas. Zadajte dátum a čas v formáte dd.mm.yyyy hh:mm:ss",True, "N/A",re.compile(r'\d{1,2}\.\d{1,2}\.\d{4}\s\d{1,2}:\d{1,2}:\d{1,2}'))
             if response == None:
-                failues['PAP_timestamp']+=1
+                failures['PAP_timestamp']+=1
                 return None
             elif response == 111:
                 return 111
@@ -240,14 +243,13 @@ def create_pap_record_object(record:list, path:str)->None or list:
         response = re.findall(regex_expressions['PAP_software'], record)
         #Select just first matching REGEX group
         response = ''.join(filter(None, response[0])).strip()
-        #Remove closing parenthesis if they do not match opening parenthesis
         response = response.strip()
         
         record_object.set_software(response)
         parameter_found = True
         record_object.set_software(response)
     except:
-        failues['PAP_SW']+=1
+        failures['PAP_SW']+=1
         return None
 
 
@@ -280,7 +282,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
     #Get safebytes generation
     software = record_object.get_software()
     if software == 'noname':
-        failues['noname_SW']+=1
+        failures['noname_SW']+=1
         return None
     
     generation = None
@@ -291,7 +293,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
     else:  
         if software != "noname" and software != "_0":
             print("Software nie je 2G ani 3G, preskakujem záznam")
-            failues['PAP_SW_detection']+=1
+            failures['PAP_SW_detection']+=1
             return None
     
 
@@ -299,12 +301,11 @@ def create_pap_record_object(record:list, path:str)->None or list:
 
 
     #Find safebytes
-    parameter_found=False
+    parameter_found = False
     try:
         response = re.findall(regex_expressions['PAP_safebytes'], record)
         #Select just first matching REGEX group
         response = ''.join(filter(None, response[0])).strip()
-        #Remove closing parenthesis if they do not match opening parenthesis
         safebytes = response.strip().split(' ')
         parameter_found=True
     except:
@@ -314,7 +315,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
         
         response = error_handler(record_object, 105,"V zadanom zázname neexistujú safebytes. Zadajte safebytes",True, "N/A",re.compile(r'(?:[0-9A-F]{2} *)*'))
         if response == None:
-            failues['PAP_safebytes'] += 1
+            failures['PAP_safebytes'] += 1
             return None
 
         elif response == 111:
@@ -339,7 +340,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
         else:
             return None    
     except:
-        failues['safebytes_version_encoding']+=1
+        failures['safebytes_version_encoding']+=1
         return None
 
 
@@ -371,7 +372,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
             elif response == 'safebytes':
                 record_object.set_software(safebytes_software)
             else:
-                failues['PAP_regex_sw_doesnt_match']+=1
+                failures['PAP_regex_sw_doesnt_match']+=1
                 return None
 
 
@@ -395,14 +396,14 @@ def create_pap_record_object(record:list, path:str)->None or list:
                 elif response == 'safebytes':
                     record_object.set_datetime(datetime.combine(safebyte_pap_date, datetime.min.time()))
                 else:
-                    failues['PAP_programmed_date_1']+=1
+                    failures['PAP_programmed_date_1']+=1
                     return None
             else:
                 record_object.set_datetime(header_pap_datetime)
         else:
             record_object.set_datetime(header_pap_datetime)
     except Exception:
-        failues['PAP_programmed_date_2']+=1
+        failures['PAP_programmed_date_2']+=1
         return None
 
 
@@ -440,6 +441,8 @@ def create_pap_record_object(record:list, path:str)->None or list:
     checksum_EEPROM = 'x'.join(['0',checksum_EEPROM])
     record_object.set_checksum_EEPROM(checksum_EEPROM)
 
+
+    # If there hasn't been an error in finding all compulsory parameters, append record_object to satisfying_records
     satisfying_records.append(record_object)
 
 
@@ -496,7 +499,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
     if parameter_found == False:
         response = error_handler(record_object, 105,"V zadanom zázname neexistuje dátum a čas. Zadajte dátum a čas v formáte dd.mm.yyyy hh:mm:ss",True, "N/A",re.compile(r'\d{1,2}\.\d{1,2}\.\d{4}\s\d{1,2}:\d{1,2}:\d{1,2}'))
         if response == None:
-            failues['KAM_config_date']+=1
+            failures['KAM_config_date']+=1
             return None
         elif response == 111:
             return 111
@@ -530,7 +533,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         C_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza osoba konajúca konfiguráciu. Zadajte Actora pre kanál C (Ak je totožný ako kanál M, zadajte \'-\'). ",False, "N/A",re.compile(r'.*'))
         
         if M_response == None:
-            failues['KAM_actor_M']+=1
+            failures['KAM_actor_M']+=1
             return None
         elif M_response == 111:
             return 111
@@ -538,7 +541,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         if not multichannel:
             pass
         elif C_response == None:
-            failues['KAM_actor_C']+=1
+            failures['KAM_actor_C']+=1
             return None
         elif C_response == 111:
             return 111
@@ -558,7 +561,6 @@ def create_kam_record_object(record:list, path:str)->None or list:
         response = re.findall(regex_expressions['HDV'], record)
         #Select just first matching REGEX group
         response = ''.join(filter(None, response[0])).strip()
-        #Remove closing parenthesis if they do not match opening parenthesis
         response = response.strip()
         
         response = response.replace('-', '')
@@ -571,7 +573,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
     if parameter_found == False:
         response = error_handler(record_object, 105,"V zadanom zázname neexistuje HDV. Zadajte HDV vo formáte XXXXXX alebo XXXXXXX",True, "N/A",re.compile(r'.*-.*'))
         if response == None:
-            failues['KAM_HDV']+=1
+            failures['KAM_HDV']+=1
             return None
         elif response == 111:
             return 111
@@ -601,7 +603,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         M_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza konfigurácia. Zadajte konfiguráciu pre kanál M",False, "N/A",re.compile(r'.*'))
         C_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza konfigurácia. Zadajte konfiguráciu pre kanál C (Ak je totožna ako kanál M, zadajte \'-\'). ",False, "N/A",re.compile(r'.*'))
         if M_response == None:
-            failues['KAM_configuration_M']+=1
+            failures['KAM_configuration_M']+=1
             return None
         elif M_response == 111:
             return 111
@@ -609,7 +611,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         if not multichannel:
             pass
         if C_response == None:
-            failues['KAM_configuration_C']+=1
+            failures['KAM_configuration_C']+=1
             return None
         elif C_response == 111:
             return 111
@@ -639,7 +641,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         M_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza softvér. Zadajte softvér pre kanál M",False, "N/A",re.compile(r'.*'))
         C_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza softvér. Zadajte softvér pre kanál C (Ak je totožna ako kanál M, zadajte \'-\'). ",False, "N/A",re.compile(r'.*'))
         if M_response == None:
-            failues['KAM_SW_M']+=1
+            failures['KAM_SW_M']+=1
             return None
         elif M_response == 111:
             return 111
@@ -647,7 +649,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         if not multichannel:
             pass
         if C_response == None:
-            failues['KAM_SW_C']+=1
+            failures['KAM_SW_C']+=1
             return None
         elif C_response == 111:
             return 111
@@ -678,7 +680,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         M_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza účastník progranovania (Actor). Zadajte Actor pre kanál M",False, "N/A",re.compile(r'.*'))
         C_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza účastník progranovania (Actor). Zadajte Actor pre kanál C (Ak je totožný ako kanál M, zadajte \'-\'). ",False, "N/A",re.compile(r'.*'))
         if M_response == None:
-            failues['KAM_prog_actor_M']+=1
+            failures['KAM_prog_actor_M']+=1
             return None
         elif M_response == 111:
             return 111
@@ -686,7 +688,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         if not multichannel:
             pass
         if C_response == None:
-            failues['KAM_prog_actor_M']+=1
+            failures['KAM_prog_actor_M']+=1
             return None
         elif C_response == 111:
             return 111
@@ -716,7 +718,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         M_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza číslo dosky. Zadajte číslo dosky pre kanál M",False, "N/A",re.compile(r'.*'))
         C_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza číslo dosky. Zadajte číslo dosky pre kanál C (Ak je totožný ako kanál M, zadajte \'-\'). ",False, "N/A",re.compile(r'.*'))
         if M_response == None:
-            failues['KAM_board_M']+=1
+            failures['KAM_board_M']+=1
             return None
         elif M_response == 111:
             return 111
@@ -724,7 +726,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         if not multichannel:
             pass
         if C_response == None:
-            failues['KAM_board_C']+=1
+            failures['KAM_board_C']+=1
             return None
         elif C_response == 111:
             return 111
@@ -792,7 +794,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         M_response = error_handler(record_object, 105,"V zadanom zázname neexistuje dátum programovania pre kanál M. Zadajte dátum vo formáte dd.mm.yyyy",True, "N/A",re.compile(r'\d{1,2}\.\d{1,2}\.\d{4}'))
         C_response = error_handler(record_object, 105,"V zadanom zázname neexistuje dátum programovania pre kanál C. Zadajte dátum vo formáte dd.mm.yyyy (Ak je totožný ako kanál M, zadajte \'-\').",True, "N/A",re.compile(r'\d{1,2}\.\d{1,2}\.\d{4}'))
         if M_response == None:
-            failues['KAM_programmed_date_M']+=1
+            failures['KAM_programmed_date_M']+=1
             return None
         elif M_response == 111:
             return 111
@@ -802,7 +804,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         if not multichannel:
             pass
         if C_response == None:
-            failues['KAM_programmed_date_C']+=1
+            failures['KAM_programmed_date_C']+=1
             return None
         elif C_response == 111:
             return 111
@@ -989,10 +991,10 @@ def main():
                 pass
             
             if response == 111:
-                upload_records(satisfying_records,number_of_records-KAM_removed_duplicit_records, records_with_invalid_expression, failues)
+                upload_records(satisfying_records,number_of_records-KAM_removed_duplicit_records, records_with_invalid_expression, failures)
                 break
             
-    upload_records(satisfying_records,number_of_records-KAM_removed_duplicit_records, records_with_invalid_expression, failues)
+    upload_records(satisfying_records,number_of_records-KAM_removed_duplicit_records, records_with_invalid_expression, failures)
 
 if __name__ == '__main__':
     main()
