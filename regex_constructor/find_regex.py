@@ -20,42 +20,6 @@ with open('regex_constructor/regex_expressions.pickle', 'rb') as file:
 with open('regex_constructor/regex_template_records.pickle', 'rb') as file:
     regex_template_records=pickle.load(file)
 
-
-
-
-# regex_template_records={
-#     'HDV': [],
-#     'PAP_date': [],
-#     'Actor': [],
-#     'Board': [],
-#     'Software': [],
-#     'Compilation_timedate': [],
-#     'CHSUM_Flash': [],
-#     'CHSUM_EEPROM': [],   
-#     'Config_timedate': [],
-#     'Wheel_diameter': [],
-#     'IRC': [],
-#     'Functions': [],
-#     'Spare_part': [],
-# }
-
-
-# regex_expressions={
-#     'supported_file_types' : r'.*_PAP_.*\.log',
-#     'SW_version_3G' : r'^[A-Z]{4}_\d$',
-#     'SW_version_2G' : r'^[A-Z]{2}_\d$',
-#     'safebytes' : r'Programmovanie safe bytes\s*-\s*0x.{4}:\s*(.*)\s*-\s*OK',
-#     'safebytes_repair' : r'[A-F 0-9 \s]*',
-#     'double_new_line_remove' : r'\n{2,}',
-#     'software_version' : r'Verzia SW\s*-\s*(\S*)\s',
-#     'any_software_version' : r'^[A-Z]{2}_\d$|^[A-Z]{4}_\d$',
-#     'hex_date' : r'HEX\s*:\s*[A-Z]:.*:\s*(\d{4}\.\d{2}\.\d{2}\.)\s*\d{2}:\d{2}:\d{2}',
-#     'any' : r''
-# }
-
-# for key in regex_template_records.keys():
-#     regex_expressions.update({key: '$^'})  
-
 #USE THIS TO MANUALLY ADD OR REMOVE NEW REGEX EXPRESSIONS
 # regex_expressions.pop('hex_date')
 # regex_template_records.update({'KAM_IRC': []})
@@ -208,7 +172,6 @@ def validate_regex(missing_regex_name:str, record:list, regex_expressions:list,r
 
 
 def find_pap_regex(record:list, file:File)->None:
-    global z
     # find record creation date
     query = re.search(regex_expressions['PAP_date'], record)
     if not query:
@@ -228,65 +191,18 @@ def find_pap_regex(record:list, file:File)->None:
 
     
 
-    # SW version
-    # software_version = None
-    # response = re.findall(regex_expressions['PAP_software'], record)
+# PAP template
+    # response = re.findall(regex_expressions['PAP_xyz'], record)
     # if len(response) == 0 :
-    #     user_input_regex = validate_regex('PAP_software', record, regex_expressions, regex_template_records)
+    #     user_input_regex = validate_regex('PAP_xyz', record, regex_expressions, regex_template_records)
     #     if user_input_regex is not None:
-    #         regex_expressions['PAP_software'] = user_input_regex
+    #         regex_expressions['PAP_xyz'] = user_input_regex
     # else:
     #     response = ''.join(filter(None, response[0])).strip()
     #     if response is None:
-    #         raise ValueError('Pre PAP nebola nájdená verzia SW.') 
+    #         raise ValueError('Pre PAP nebol nájdený xyz.') 
 
-    # if response == []:
-    #     print('empty')
-    #     return None    
-
-
-
-    # if len(re.findall(r'^[A-Za-z]{2}_[0-9]$', response)):
-    #     print("2G")
-    # elif len(re.findall(r'^[A-Za-z]{4}_[0-9]$', response)):
-    #     print("3G")
-    # else:
-    #     print("NOG")  
-    
-
-
-
-    # Safebytes
-    response = re.findall(regex_expressions['PAP_safebytes'], record)
-   
-    if len(response) == 0 and value > datetime(2009,10,10) :
-        user_input_regex = validate_regex('PAP_safebytes', record, regex_expressions, regex_template_records)
-        if user_input_regex is not None:
-            regex_expressions['PAP_safebytes'] = user_input_regex
-    elif value > datetime(2009,10,10):
-        safebytes = response[0]
-        print(safebytes) 
-        if safebytes is None:
-            raise ValueError('Pre PAP neboli nájdené safebytes.') 
-
-
-
-
-
-    # HEX date
-    # response = re.findall(regex_expressions['PAP_hex_date'], record)
-    # if len(response) == 0 :
-    #     print('not found')
-    #     user_input_regex = validate_regex('PAP_hex_date', record, regex_expressions, regex_template_records)
-    #     if user_input_regex is not None:
-    #         regex_expressions['PAP_hex_date'] = user_input_regex
-    # else:
-    #     HEX_date = response[0][0]
-    #     print(HEX_date)
-
-    #     if HEX_date is None:
-    #         raise ValueError('Pre PAP nebol nájdený dátum kompilácie') 
-            
+    #     print(response)
 
 
 
@@ -319,211 +235,28 @@ def find_kam_regex(record:list, file:File)->None:
         raise ValueError('Pre KAM nebol nájdený platný dátum a čas.')
 
 
-    # KAM_actor
-    # response = re.findall(regex_expressions['KAM_actor'], record)
+# KAM single channel template
+
+    # response = re.findall(regex_expressions['KAM_xyz'], record)
     # if len(response) == 0 :
-    #     user_input_regex = validate_regex('KAM_actor', record, regex_expressions, regex_template_records)
+    #     user_input_regex = validate_regex('KAM_xyz', record, regex_expressions, regex_template_records)
     #     if user_input_regex is not None:
-    #         regex_expressions['KAM_actor'] = user_input_regex
+    #         regex_expressions['KAM_xyz'] = user_input_regex
     # else:
     #     response = ''.join(filter(None, response[0])).strip()
     #     if '(' not in response:
     #         response = response.replace(')', '')
     #     if response is None:
-    #         raise ValueError('Pre KAM nebol nájdený platný Actor.') 
-
-    # KAM_HDV
-    # response = re.findall(regex_expressions['HDV'], record)
-    # if len(response) == 0 :
-    #     user_input_regex = validate_regex('HDV', record, regex_expressions, regex_template_records)
-    #     if user_input_regex is not None:
-    #         regex_expressions['HDV'] = user_input_regex
-    # else:
-    #     response = ''.join(filter(None, response[0])).strip()
-    #     if response is None:
-    #         raise ValueError('Pre KAM nebol nájdený platný Actor.') 
-
-        
-    # KAM_Configuration
-    # response = re.findall(regex_expressions['Programmed_configuration'], record)
-    # if len(response) == 0 and datetime.date(datem) > date(2014,1,1):
-    #     pass
-    #     # user_input_regex = validate_regex('Programmed_configuration', record, regex_expressions, regex_template_records)
-    #     # if user_input_regex is not None:
-    #     #     regex_expressions['Programmed_configuration'] = user_input_regex
-            
-    # elif datetime.date(datem) > date(2014,1,1):
-    #     M_response = ''.join(filter(None, response[0])).strip()
-    #     if M_response is None:
-    #         raise ValueError('Pre KAM nebola najdena konfiguracia.') 
-        
-    #     if len(response ) == 2:
-    #         C_response = ''.join(filter(None, response[1])).strip()
-    #     else:
-    #         C_response = M_response
-
-    #     print(M_response)
-    #     print(C_response)
-
-    # KAM_Configuration
-    # response = re.findall(regex_expressions['Programmed_configuration'], record)
-    # if len(response) == 0 and datetime.date(datem) > date(2014,1,1):
-    #     pass
-    #     # user_input_regex = validate_regex('Programmed_configuration', record, regex_expressions, regex_template_records)
-    #     # if user_input_regex is not None:
-    #     #     regex_expressions['Programmed_configuration'] = user_input_regex
-            
-    # elif datetime.date(datem) > date(2014,1,1):
-    #     M_response = ''.join(filter(None, response[0])).strip()
-    #     if M_response is None:
-    #         raise ValueError('Pre KAM nebola najdena konfiguracia.') 
-        
-    #     if len(response ) == 2:
-    #         C_response = ''.join(filter(None, response[1])).strip()
-    #     else:
-    #         C_response = M_response
-
-    #     print(M_response)
-    #     print(C_response)
-
-
-    # KAM software
-    # response = re.findall(regex_expressions['KAM_software'], record)
-    # if len(response) == 0:
-    #     # pass
-    #     user_input_regex = validate_regex('KAM_software', record, regex_expressions, regex_template_records)
-    #     if user_input_regex is not None:
-    #         regex_expressions['KAM_software'] = user_input_regex
-            
-    # else:
-    #     M_response = ''.join(filter(None, response[0])).strip()
-    #     if M_response is None:
-    #         raise ValueError('Pre KAM nebol nájdený software') 
-        
-    #     if len(response ) == 2:
-    #         C_response = ''.join(filter(None, response[1])).strip()
-    #     else:
-    #         C_response = M_response
-
-    #     print(M_response)
-    #     print(C_response)
-
-
-    # # KAM programmed actor software
-    # response = re.findall(regex_expressions['KAM_programmed_actor'], record)
-    # if len(response) == 0:
-    #     # pass
-    #     user_input_regex = validate_regex('KAM_programmed_actor', record, regex_expressions, regex_template_records)
-    #     if user_input_regex is not None:
-    #         regex_expressions['KAM_programmed_actor'] = user_input_regex
-            
-    # else:
-    #     M_response = ''.join(filter(None, response[0])).strip()
-    #     if M_response is None:
-    #         raise ValueError('Pre KAM nebol nájdený actor programovania') 
-        
-    #     if len(response ) == 2:
-    #         C_response = ''.join(filter(None, response[1])).strip()
-    #     else:
-    #         C_response = M_response
-
-    #     print(M_response)
-    #     print(C_response)
-
+    #         raise ValueError('Pre KAM nebol nájdený platný xyz.') 
 
     
-    # KAM board number
-    # response = re.findall(regex_expressions['KAM_board_number'], record)
-    # if len(response) == 0:
-    #     # pass
-    #     user_input_regex = validate_regex('KAM_board_number', record, regex_expressions, regex_template_records)
-    #     if user_input_regex is not None:
-    #         regex_expressions['KAM_board_number'] = user_input_regex
-            
-    # else:
-    #     M_response = ''.join(filter(None, response[0])).strip()
-    #     if M_response is None:
-    #         raise ValueError('Pre KAM nebolo nájdené číslo dosky') 
-        
-    #     if len(response ) == 2:
-    #         C_response = ''.join(filter(None, response[1])).strip()
-    #     else:
-    #         C_response = M_response
-
-    #     print(M_response)
-    #     print(C_response)
-   
-    # KAM functionality
-    # response = re.findall(regex_expressions['KAM_functionality'], record)
-    # if len(response) == 0 and datetime.date(datem) > date(2015,1,1):
-    #     pass
-    #     user_input_regex = validate_regex('KAM_functionality', record, regex_expressions, regex_template_records)
-    #     if user_input_regex is not None:
-    #         regex_expressions['KAM_functionality'] = user_input_regex
-            
-    # elif datetime.date(datem) > date(2015,1,1):
-    #     M_response = ''.join(filter(None, response[0])).strip()
-    #     if M_response is None:
-    #         raise ValueError('Pre KAM nebola nájdená funkcionalita') 
-        
-    #     if len(response ) == 2:
-    #         C_response = ''.join(filter(None, response[1])).strip()
-    #     else:
-    #         C_response = M_response
-
-    #     print(M_response)
-    #     print(C_response)
-
-    # KAM programed date
-    # response = re.findall(regex_expressions['KAM_programmed_date'], record)
-    # if len(response) == 0:
-    #     # pass
-    #     user_input_regex = validate_regex('KAM_programmed_date', record, regex_expressions, regex_template_records)
-    #     if user_input_regex is not None:
-    #         regex_expressions['KAM_programmed_date'] = user_input_regex
-            
-    # else:
-    #     M_response = ''.join(filter(None, response[0])).strip()
-    #     if M_response is None:
-    #         raise ValueError('Pre KAM nebol nájdený dátum programovania') 
-        
-    #     if len(response ) == 2:
-    #         C_response = ''.join(filter(None, response[1])).strip()
-    #     else:
-    #         C_response = M_response
-
-    #     print(M_response)
-    #     print(C_response)
-
-    # KAM spare_part
-    # response = re.findall(regex_expressions['KAM_spare_part'], record)
-    # if len(response) == 0:
-    #     pass
-    #     # user_input_regex = validate_regex('KAM_spare_part', record, regex_expressions, regex_template_records)
-    #     # if user_input_regex is not None:
-    #     #     regex_expressions['KAM_spare_part'] = user_input_regex
-            
-    # else:
-    #     M_response = ''.join(filter(None, response[0])).strip()
-    #     if M_response is None:
-    #         raise ValueError('Pre KAM nebolo možné overiť, či sa jedná o náhradný diel') 
-        
-    #     if len(response ) == 2:
-    #         C_response = ''.join(filter(None, response[1])).strip()
-    #     else:
-    #         C_response = M_response
-
-    #     print(M_response)
-    #     print(C_response)
-    
-    
-    # KAM_wheel_diameter
-    # response = re.findall(regex_expressions['KAM_wheel_diameter'], record)
+# KAM multi channel template with minimum date
+    # response = re.findall(regex_expressions['KAM_xyz'], record)
     # if len(response) == 0 and datetime.date(datem) > date(2013,1,1):
     #     pass
-    #     user_input_regex = validate_regex('KAM_wheel_diameter', record, regex_expressions, regex_template_records)
+    #     user_input_regex = validate_regex('KAM_xyz', record, regex_expressions, regex_template_records)
     #     if user_input_regex is not None:
-    #         regex_expressions['KAM_wheel_diameter'] = user_input_regex
+    #         regex_expressions['KAM_xyz'] = user_input_regex
             
     # elif datetime.date(datem) > date(2013,1,1):
     #     M_response = ''.join(filter(None, response[0])).strip()
@@ -538,16 +271,6 @@ def find_kam_regex(record:list, file:File)->None:
     #     print(M_response)
     #     print(C_response)
 
-    # KAM_IRC
-    response = re.findall(regex_expressions['KAM_IRC'], record)
-    if len(response) == 0 and datetime.date(datem) > date(2015,1,1):
-        pass
-        # user_input_regex = validate_regex('KAM_IRC', record, regex_expressions, regex_template_records)
-        # if user_input_regex is not None:
-        #     regex_expressions['KAM_IRC'] = user_input_regex
-            
-    elif datetime.date(datem) > date(2015,1,1):
-        pass
 
 
 

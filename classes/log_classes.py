@@ -45,6 +45,7 @@ class KAMRecord:
         self.M_wheel_diameter = None
         self.M_IRC = None
         self.M_spare_part = None
+        self.M_configured_device = None
         self.C_programmed_date = None
         self.C_programmed_actor = None
         self.C_programmed_software = None
@@ -55,6 +56,7 @@ class KAMRecord:
         self.C_wheel_diameter = None
         self.C_IRC = None
         self.C_spare_part = None
+        self.C_configured_device = None
         self.path = None
         self.content = None
 
@@ -175,6 +177,9 @@ class KAMRecordBuilder :
     def set_M_spare_part(self,M_spare_part):
         self.record.M_spare_part = M_spare_part
         return self
+    def set_M_configured_device(self,M_configured_device):
+        self.record.M_configured_device = M_configured_device
+        return self
     def set_C_programmed_date(self,C_programmed_date):
         self.record.C_programmed_date = C_programmed_date
         return self
@@ -204,6 +209,9 @@ class KAMRecordBuilder :
         return self
     def set_C_spare_part(self,C_spare_part):
         self.record.C_spare_part = C_spare_part
+        return self
+    def set_C_configured_device(self,C_configured_device):
+        self.record.C_configured_device = C_configured_device
         return self
     def set_content(self,content):
         self.record.content = content
@@ -239,6 +247,8 @@ class KAMRecordBuilder :
         return self.record.M_IRC
     def get_M_spare_part(self):
         return self.record.M_spare_part
+    def get_M_configured_device(self):
+        return self.record.M_configured_device
     def get_C_programmed_date(self):
         return self.record.C_programmed_date
     def get_C_programmed_actor(self):
@@ -259,6 +269,8 @@ class KAMRecordBuilder :
         return self.record.C_IRC
     def get_C_spare_part(self):
         return self.record.C_spare_part
+    def get_C_configured_device(self):
+        return self.record.C_configured_device
     def get_content(self):
         return self.record.content
     def get_path(self):

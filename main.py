@@ -37,8 +37,11 @@ failures = {
     'KAM_board_C': 0,
     'KAM_programmed_date_M': 0,
     'KAM_programmed_date_C': 0,
+    'KAM_configured_device_M' : 0,
+    'KAM_configured_device_C' : 0,
     'noname_SW': 0
 }
+
 
 # global record_object_collection
 
@@ -183,7 +186,7 @@ def collect_records_from_files(list_of_files:dict)->tuple:
         path = '/'.join(path.split('\\')[-3:])
 
 
-        file_object_collection.append(File(records_list, path))
+        file_object_collection.append(File(records_list, path.lower()))
 
 
     return file_object_collection, failed_files_counter
@@ -201,7 +204,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
 
 
     #Find timestamp programmed
-    parameter_found=False
+    parameter_found = False
     try:
         response = re.search(regex_expressions['PAP_date'], record)
         response = response.group(0).strip()
@@ -213,7 +216,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
         try:
             response = datetime.strptime(response, format)
             header_pap_datetime = response
-            parameter_found=True
+            parameter_found = True
             break
         except:
             pass
@@ -227,7 +230,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
                 return 111
             else:
                 response = datetime.strptime(response, '%d.%m.%Y %H:%M:%S')
-                parameter_found=True
+                parameter_found = True
                 
     header_pap_datetime = response
 
@@ -256,7 +259,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
 
 
     #Find HEX date
-    parameter_found=False
+    parameter_found = False
     try:
         response = re.findall(regex_expressions['PAP_hex_date'], record)
         response = response[0][1].strip()
@@ -268,7 +271,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
         try:
             response = datetime.strptime(response, format)
             hex_date = response
-            parameter_found=True
+            parameter_found = True
             break
         except:
             pass
@@ -307,7 +310,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
         #Select just first matching REGEX group
         response = ''.join(filter(None, response[0])).strip()
         safebytes = response.strip().split(' ')
-        parameter_found=True
+        parameter_found = True
     except:
         pass
 
@@ -322,7 +325,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
             return 111
         else:
             safebytes = response.strip().split(' ')
-            parameter_found=True   
+            parameter_found = True   
 
 
 
@@ -338,6 +341,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
         elif generation == 3:
             version = safebyte_versions[int(safebytes[0], 16)] 
         else:
+            failures['safebytes_version_encoding']+=1
             return None    
     except:
         failures['safebytes_version_encoding']+=1
@@ -477,7 +481,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
 
 
     #Find KAM Config date
-    parameter_found=False
+    parameter_found = False
     try:
         response = re.search(regex_expressions['KAM_date'], record)  
         response = response.group(0).strip()
@@ -490,7 +494,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         try:
             response = datetime.strptime(response, format)
             record_object.set_config_datetime(response)
-            parameter_found=True
+            parameter_found = True
             break
         except:
             pass
@@ -505,7 +509,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
             return 111
         else:
             response = datetime.strptime(response.strip(), '%d.%m.%Y %H:%M:%S')
-            parameter_found=True
+            parameter_found = True
 
     record_object.set_config_datetime(response)
 
@@ -548,7 +552,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         elif C_response == '-':
             C_response = M_response
 
-        parameter_found=True
+        parameter_found = True
             
     record_object.set_M_actor(M_response)
     record_object.set_C_actor(C_response)
@@ -556,7 +560,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
 
 
     #Find HDV (Locomotive ID)
-    parameter_found=False
+    parameter_found = False
     try:
         response = re.findall(regex_expressions['HDV'], record)
         #Select just first matching REGEX group
@@ -566,19 +570,19 @@ def create_kam_record_object(record:list, path:str)->None or list:
         response = response.replace('-', '')
 
         record_object.set_HDV(response)
-        parameter_found=True
+        parameter_found = True
     except:
         pass
 
     if parameter_found == False:
-        response = error_handler(record_object, 105,"V zadanom zázname neexistuje HDV. Zadajte HDV vo formáte XXXXXX alebo XXXXXXX",True, "N/A",re.compile(r'.*-.*'))
+        response = error_handler(record_object, 105,"V zadanom zázname neexistuje HDV. Zadajte HDV vo formáte XXXXXX alebo XXXXXXX",True, "N/A",re.compile(r'.*'))
         if response == None:
             failures['KAM_HDV']+=1
             return None
         elif response == 111:
             return 111
         else:
-            parameter_found=True
+            parameter_found = True
             
     record_object.set_HDV(response)
 
@@ -610,7 +614,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         
         if not multichannel:
             pass
-        if C_response == None:
+        elif C_response == None:
             failures['KAM_configuration_C']+=1
             return None
         elif C_response == 111:
@@ -618,7 +622,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         elif C_response == '-':
             C_response = M_response
 
-        parameter_found=True
+        parameter_found = True
             
     record_object.set_M_configuration(M_response)
     record_object.set_C_configuration(C_response)
@@ -648,7 +652,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
                
         if not multichannel:
             pass
-        if C_response == None:
+        elif C_response == None:
             failures['KAM_SW_C']+=1
             return None
         elif C_response == 111:
@@ -656,7 +660,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         elif C_response == '-':
             C_response = M_response
 
-        parameter_found=True
+        parameter_found = True
             
     record_object.set_M_programmed_software(M_response)
     record_object.set_C_programmed_software(C_response)
@@ -687,7 +691,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         
         if not multichannel:
             pass
-        if C_response == None:
+        elif C_response == None:
             failures['KAM_prog_actor_M']+=1
             return None
         elif C_response == 111:
@@ -695,7 +699,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         elif C_response == '-':
             C_response = M_response
 
-        parameter_found=True
+        parameter_found = True
   
     record_object.set_M_programmed_actor(M_response)
     record_object.set_C_programmed_actor(C_response)
@@ -725,7 +729,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         
         if not multichannel:
             pass
-        if C_response == None:
+        elif C_response == None:
             failures['KAM_board_C']+=1
             return None
         elif C_response == 111:
@@ -733,7 +737,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
         elif C_response == '-':
             C_response = M_response
 
-        parameter_found=True
+        parameter_found = True
             
     record_object.set_M_programmed_board(M_response)
     record_object.set_C_programmed_board(C_response)
@@ -760,7 +764,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
     record_object.set_C_functionality(C_response)
 
     #Find KAM programmed date
-    parameter_found=False
+    parameter_found = False
     M_response=''
     try:
         response = re.findall(regex_expressions['KAM_programmed_date'], record)  
@@ -803,7 +807,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
 
         if not multichannel:
             pass
-        if C_response == None:
+        elif C_response == None:
             failures['KAM_programmed_date_C']+=1
             return None
         elif C_response == 111:
@@ -845,8 +849,6 @@ def create_kam_record_object(record:list, path:str)->None or list:
             C_response = True
         elif C_response in translations_of_word_no:
             C_response = False
-        else:
-            return None
 
     except:
         pass
@@ -901,6 +903,47 @@ def create_kam_record_object(record:list, path:str)->None or list:
     record_object.set_M_IRC(int(M_response))
     record_object.set_C_IRC(int(C_response))
 
+    #Find KAM configured_device
+    parameter_found = False
+    M_response = ''
+    C_response = ''
+
+    try:
+        response = re.findall(regex_expressions['KAM_configured_device'],record)
+        M_response = ''.join(filter(None, response[0])).strip()
+        if len(response) == 2:
+            C_response = ''.join(filter(None, response[1])).strip()
+        elif multichannel:
+            C_response = M_response
+        parameter_found = True
+    except:
+        pass
+
+    if parameter_found == False:
+        M_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza konfigurované zariadenie. Zadajte konfigurované zariadenie pre kanál M",False, "N/A",re.compile(r'.*'))
+        C_response = error_handler(record_object, 105,"V zadanom zázname sa nenachádza konfigurované zariadenie. Zadajte konfigurované zariadenie pre kanál C (Ak je totožné ako kanál M, zadajte \'-\'). ",False, "N/A",re.compile(r'.*'))
+    
+        if M_response == None:
+            failures['KAM_configured_device_M']+= 1
+            return None
+        elif M_response == 111:
+            return 111
+        
+        if not multichannel:
+            pass
+        elif C_response == None:
+            failures['KAM_configured_device_C']+= 1
+            return None
+        elif C_response == 111:
+            return 111
+        elif C_response == '-':
+            C_response = M_response
+
+        parameter_found=True
+            
+    record_object.set_M_configured_device(M_response)
+    record_object.set_C_configured_device(C_response)
+
 
 
     # If there's not an error while building object, append it to satisfying records
@@ -924,7 +967,8 @@ def main():
     def select_software_mode():
         nonlocal starting_path, minimal_date
 
-        print('\nSpracovanie výstupov MAP. \nPre spracovanie súborov typu PAP, KAM alebo kamw stlačte: P\nPre nahratie zálohovaných spracovanch súborov do databázy stlačte: B\nPre ukončenie programu stlačte ENTER')
+        print('\nSpracovanie výstupov MAP. \nPre spracovanie súborov typu PAP, KAM alebo kamw stlačte: P\nPre nahratie zálohovaných spracovaných súborov do databázy stlačte: B\
+              \nPre odstránenie záznamov z databázy stlačte: D\nPre ukončenie programu stlačte ENTER')
 
         software_mode = getch().lower()
 
@@ -932,7 +976,7 @@ def main():
             # print('-'*80)
             # print("Uistite sa, že všetky súbory majú rovnakú hĺbku v rámci adresára.\n Súbory s cestou 2010/01 a 2020/01 = OK.2010/01 a 2020/01 ")
             starting_path = input(r'Zadajte koreňový adresár napr. C:\User\Admin\Document: ')
-            minimal_date = input(r'Zadajte minimálny dátum záznamu pre spracovanie vo formáte YYYY/MM napr. 2000/01: ') 
+            minimal_date = input(r'Zadajte minimálny dátum záznamu pre spracovanie vo formáte YYYY/MM napr. 2020/01: ') 
             try:
                 minimal_date = datetime.strptime(minimal_date, '%Y/%m')
             except Exception:
@@ -951,7 +995,7 @@ def main():
     print("Začínam spracovávať súbory v adresári: {}".format(starting_path))
    
 
-   
+    # Map directory and put all valid paths to list
     paths = []
     for root, directories, selected_files in walk(starting_path):
         if len(selected_files) != 0:
@@ -960,11 +1004,15 @@ def main():
                     continue
                 paths.append(join(root,file))
 
+
     if len(paths) == 0:
-        print("Chyba 102: V adresári {} sa nenachádzajú žiadne súbory.\nUkončujem program".format(starting_path))
+        print("Chyba 102: V adresári {} sa nenachádzajú žiadne súbory, alebo sú staršie ako {}.\nUkončujem program".format(starting_path, datetime.strftime(minimal_date, '%d.%m.%Y')))
         return None
 
+    # Divide files into records
     file_object_collection, failed_files = collect_records_from_files(paths)
+
+
     number_of_records = sum(file.get_length() for file in file_object_collection)
     print("Počet prečítaných súborov: {} z celkového počtu: {}, úspešnosť: {}%".format(len(paths), failed_files+len(paths), 100*(len(paths)/(failed_files+len(paths)))))
     print("Počet nájdených záznamov (PAP + KAM): {}".format(number_of_records))    
@@ -976,7 +1024,7 @@ def main():
     for file in file_object_collection:
         for record in file.get_records():
             response = None
-            if any(invalid_expression in  record.lower() for invalid_expression in ['mazanie','prerušená', 'chyba', 'porušená', 'neplatná', 'error', 'interrupted', 'broken', 'nenainštalované']):
+            if any(invalid_expression in  record.lower() for invalid_expression in ['mazanie','prerušená', 'chyba', 'porušená', 'neplatná', 'error', 'interrupted', 'broken', 'nenainštalované', 'Consistency of configuration data','ERROR prog enable']):
                 records_with_invalid_expression += 1
                 continue
             if 'pap' in  file.get_path().lower():
