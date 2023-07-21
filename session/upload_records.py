@@ -85,6 +85,26 @@ def download_data_as_dict(table:sql.Identifier, column:sql.Identifier, cursor) -
 
 
 
+#fetch data from DB
+def fetch_database_data(paths, previous_database_paths, boards, HDV, software, conn, cursor):
+    try:
+        paths = download_data_as_dict(sql.Identifier('Path'), sql.Identifier('Path'), cursor)
+        previous_database_paths = paths.copy()
+        boards = download_data_as_dict(sql.Identifier('Board'), sql.Identifier('Board_version'), cursor)
+        HDV = download_data_as_dict(sql.Identifier('HDV'), sql.Identifier('HDV'), cursor)
+        software = download_data_as_dict(sql.Identifier('Software'), sql.Identifier('Version'), cursor)
+        return paths, previous_database_paths, boards, HDV, software
+    except Exception as err:
+        print(f'Chyba 110: Nastala chyba pri sťahovaní dát. \npsycopg2: {err}\nChcete sa o to pokúsiť znova? (Y/N)')
+        if getch().lower() == b'y':
+            conn.rollback()
+            return fetch_database_data(paths, previous_database_paths, boards, HDV, software, conn, cursor)
+        else:
+            cursor.close()
+            conn.close()
+            return None
+
+
 
 
 
@@ -94,7 +114,7 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
     number_of_satisfying_records = len(records)
     if number_of_satisfying_records == 0: 
         print('Chyba 107: Žiaden zo záznamov sa nepodarilo spracovať, nič sa nanahrá.')
-        exit() 
+        return None 
            
     #output stats   
     print('-'*80)
@@ -119,7 +139,8 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
     print('Nespracované záznamy: {} z toho platných: {}'.format(total_number_of_records-number_of_satisfying_records, total_number_of_records-number_of_satisfying_records-records_with_invalid_expression))
     print('Úspešnosť spracovania platných záznamov: {}%:'.format(100*number_of_satisfying_records/(total_number_of_records-records_with_invalid_expression)))
 
-    if input('Chcete vypísať štatistiku spracovania (Y/N)').lower() == 'y':
+    print('Chcete vypísať štatistiku spracovania (Y/N)')
+    if getch().lower() == b'y':
         failed_total = sum(failures[x] for x in failures)
         failures = sorted(failures.items(),key = lambda item: item[1]  ,  reverse=True)
         for failure in failures:
@@ -138,27 +159,15 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
 
     print('-'*80)
     print('Sťahovanie parametrov z databázy')
+    
     paths, previous_database_paths, boards, HDV, software = {}, {}, {}, {}, {}
-    #fetch data from DB
-    def fetch_database_data():
-        try:
-            nonlocal paths, previous_database_paths, boards, HDV, software
-            paths = download_data_as_dict(sql.Identifier('Path'), sql.Identifier('Path'), cursor)
-            previous_database_paths = paths.copy()
-            boards = download_data_as_dict(sql.Identifier('Board'), sql.Identifier('Board_version'), cursor)
-            HDV = download_data_as_dict(sql.Identifier('HDV'), sql.Identifier('HDV'), cursor)
-            software = download_data_as_dict(sql.Identifier('Software'), sql.Identifier('Version'), cursor)
-        except Exception as err:
-            print(f'Chyba 110: Nastala chyba pri sťahovaní dát. \n Chcete sa o to pokúsiť znova? (Y/N) \n psycopg2: {err}')
-            if input().lower() == 'y':
-                fetch_database_data()
-            else:
-                cursor.close()
-                conn.close()
-                exit()
 
+    temp = fetch_database_data(paths, previous_database_paths, boards, HDV, software, conn, cursor)
 
-    fetch_database_data()
+    if temp is None:
+        return None
+    else:
+        paths, previous_database_paths, boards, HDV, software = temp
 
     
     print('Sťahovanie parametrov z databázy: úspech')
@@ -167,7 +176,6 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
     print('-'*80)
     print('Vyhľadávanie chýbajúcich parametrov a nahrávananie do databázy')
     
-
     # Create new set object as difference of extracted parameters and parameters found in database
     absent_paths, absent_HDV, absent_boards, absent_software = [], [], [], []
     for record_object in records:
@@ -205,8 +213,8 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
         conn.commit()    
     except Exception as err:
         conn.rollback()
-        print(f'Chyba 119: Pri aktualizacií parametrov databázy nastala chyba. Ukončujem program \n Psycopg2: {err}')
-        exit()
+        print(f'Chyba 119: Pri aktualizacií parametrov databázy nastala chyba. \n Psycopg2: {err}\n Návrat do menu.')
+        return None
 
     print('Vyhľadávanie chýbajúcich parametrov a nahrávananie do databázy: úspech')
     print('-'*80)
@@ -225,8 +233,8 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
 
         record = {}
         if record_object.get_path() in previous_database_paths:
-            print(f'Nájdený záznam s duplicitnou cestou k súboru: {record_object.get_path()} prerušujem nahrávanie.\nUkončujem program')
-            exit()
+            print(f'Nájdený záznam s duplicitnou cestou k súboru: {record_object.get_path()} prerušujem nahrávanie.\nNávrat do menu.')
+            return None
 
         # General parameters
         record['Path'] = paths[record_object.get_path()]
@@ -331,8 +339,8 @@ def recover_files() -> None:
         record_path = abspath(join(dirname(__file__), '../temp/LPTB.pickle'))
 
         if not os.path.isfile(stats_path) or not os.path.isfile(record_path):
-            print(f'Chyba 121: Záloha neexistuje. Hľadaná cesta: {stats_path}, {record_path}.\nUkončujem program')
-            exit()
+            print(f'Chyba 121: Záloha neexistuje. Hľadaná cesta: {stats_path} a {record_path}.\nUkončujem program')
+            return None
 
         try:
             with open(stats_path, 'rb') as file:
@@ -342,7 +350,7 @@ def recover_files() -> None:
                 records = pickle.load(file)
         except:
             print('Chyba 101: Program nemá povolenia na čítanie zálohy.\nUkončujem program')
-            exit()
+            return None
             
         upload_records(records, stats['total_number_of_records'], stats['records_with_invalid_expression'], stats['failures'])
         
