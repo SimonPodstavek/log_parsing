@@ -319,15 +319,13 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
     
     print('Nahrávanie záznamov do databázy: úspech')
     print('-'*80)
-    print(perf_counter()-sclek)
+    print(f'Čas spracovania: {perf_counter()-sclek}s')
 
     print(f'\nDo databázy bolo nahraných {uploaded_records_counter} súborov., čo tvorí {uploaded_records_counter/number_of_satisfying_records*100}% spracovaných záznamov')
-    print('Ukončujem reláciu')
+    print('Ukončujem reláciu.')
     cursor.close()
     conn.close()
 
-    print('Relácia ukončená. Stlačte ENTER pre ukončenie programu')
-    input()
 
     return None    
 

@@ -967,8 +967,8 @@ def main():
     minimal_date =  None
     def select_software_mode():
         nonlocal starting_path, minimal_date
-
-        print('\nSpracovanie výstupov MAP. \nPre spracovanie súborov typu PAP, KAM alebo kamw stlačte: P\nPre nahratie zálohovaných spracovaných súborov do databázy stlačte: B\
+        print('-'*80)
+        print('\nSpracovanie výstupov MAP \nPre spracovanie súborov typu PAP, KAM alebo kamw stlačte: P\nPre nahratie zálohovaných spracovaných súborov do databázy stlačte: B\
               \nPre odstránenie záznamov z databázy stlačte: D\nPre ukončenie programu stlačte ENTER')
 
         software_mode = getch().lower()
@@ -977,18 +977,24 @@ def main():
             # print('-'*80)
             # print("Uistite sa, že všetky súbory majú rovnakú hĺbku v rámci adresára.\n Súbory s cestou 2010/01 a 2020/01 = OK.2010/01 a 2020/01 ")
             starting_path = input(r'Zadajte koreňový adresár napr. C:\User\Admin\Document: ')
-            minimal_date = input(r'Zadajte minimálny dátum záznamu pre spracovanie vo formáte YYYY/MM napr. 2020/01: ') 
+            minimal_date = input(r'Zadajte minimálny dátum záznamu pre spracovanie vo formáte YYYY/MM napr. 2020/01 alebo stlačte ENTER: ') 
+            if minimal_date == '':
+                minimal_date = '1900/01'
+
             try:
                 minimal_date = datetime.strptime(minimal_date, '%Y/%m')
             except Exception:
                 print("Chyba 123: Zadaný dátum nespĺňa požiadavky na formát (YYYY/MM).")
                 select_software_mode()
+
+            primary_mediator(starting_path, minimal_date)
+            select_software_mode()
         elif software_mode == b'b':
                 recover_files()
-                exit()
+                select_software_mode()
         elif software_mode == b'd':
             user_initiated_record_removal()
-            exit()
+            select_software_mode()
         elif software_mode == b'\r':
             exit()
         else:
@@ -996,8 +1002,12 @@ def main():
             select_software_mode()
     select_software_mode()
 
-    print("Začínam spracovávať súbory v adresári: {}".format(starting_path))
+    
    
+
+def primary_mediator(starting_path:str, minimal_date:datetime) -> None:
+
+    print("Začínam spracovávať súbory v adresári: {}".format(starting_path))
 
     # Map directory and put all valid paths to list
     paths = []
