@@ -12,7 +12,8 @@ import pickle
 from classes.log_classes import *
 from classes.safebytes_coordinates import *
 from utils.handle_error import *
-from session.upload_records import recover_files 
+from session.upload_records import recover_files
+from session.remove_records import user_initiated_record_removal
 
 failures = {
     'PAP_timestamp': 0,
@@ -985,6 +986,9 @@ def main():
         elif software_mode == b'b':
                 recover_files()
                 exit()
+        elif software_mode == b'd':
+            user_initiated_record_removal()
+            exit()
         elif software_mode == b'\r':
             exit()
         else:
