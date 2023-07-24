@@ -3,8 +3,8 @@ from time import strftime, perf_counter
 import time
 from sys import exit
 import pickle
-from os.path import abspath, dirname, join
-import os
+from os.path import abspath, dirname, join, exists
+from os import path, access, R_OK, W_OK
 import io
 from msvcrt import getch
 
@@ -15,6 +15,8 @@ import psycopg2
 from session.session import create_session
 import classes
 
+
+CWD = dirname(__file__)
 
 failure_notation = {
     'PAP_timestamp': 'Časová známka PAP - REGEX',
@@ -43,6 +45,26 @@ failure_notation = {
     'KAM_configured_device_C': 'KAM kanál C Konfigurované zariadenie',
     'noname_SW': 'KAM Softvér je nastavený ako \'noname\''
 }
+
+
+# Check if file exists, is accessible and can be opened
+def verify_file_OK(relative_path, file_description, mode):
+    file_path = join(CWD,relative_path)
+    if not exists(file_path):
+        print(f'Chyba 100: Súbor {file_description} nebol nájdený. Cesta: {file_path}')
+        return False
+
+    if mode == 'rb':
+        if not access(file_path, R_OK):
+            print(f'Chyba 101: Na čítanie {file_description} nemáte dostatčné oprávnenia. Cesta: {file_path}')
+            return False
+        
+    elif mode == 'wb':
+        if not access(file_path, W_OK):
+            print(f'Chyba 101: Na zápis {file_description} nemáte dostatčné oprávnenia. Cesta: {file_path}')
+            return False
+
+
 
 
 
@@ -122,13 +144,22 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
 
     try:
         stats = {'total_number_of_records' : total_number_of_records, 'records_with_invalid_expression' : records_with_invalid_expression, 'failures' : failures}
-        with open(abspath(join(dirname(__file__), '../temp/stats.pickle')), 'wb') as file:
+        
+        
+        if not verify_file_OK('../temp/stats.pickle', 'štatistiky spracovania', 'wb'):
+            raise Exception
+ 
+        with open(join(CWD, '../temp/stats.pickle'), 'wb') as file:
             pickle.dump(stats, file)
-        with open(abspath(join(dirname(__file__), '../temp/LPTB.pickle')), 'wb') as file:
+
+        if not verify_file_OK('../temp/stats.pickle', 'obsahu spracovania', 'wb'):
+            raise Exception
+        with open(join(CWD, '../temp/LPTB.pickle'), 'wb') as file:
             pickle.dump(records, file)
-            print('Spracované zázamy sú zálohované. Cesta: {}\n'.format(abspath(join(dirname(__file__), '../temp/processed_records.pickle'))))
-    except:
-        print('Chyba 120: Spracované súbory nebolo možné zálohovať. Uistite sa, že má program dostatočné povolenia pre vytváranie súborov.')
+            print('Spracované zázamy sú zálohované. Cesta: {}\n'.format(join(CWD, '../temp/')))
+
+    except Exception as err:
+        print(f'Chyba 120: Spracované súbory nebolo možné zálohovať. Uistite sa, že má program dostatočné povolenia pre vytváranie súborov.Err_desc:{err}')
 
 
 
@@ -153,7 +184,6 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
     print('Inicializácia relácie s databázou')
     #create DB session
     cursor, conn = create_session()
-    conn.autocommit = False
     print('Inicializácia relácie s databázou: úspech')
     print('-'*80)
 
@@ -209,8 +239,7 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
         paths.update(upload_unique_and_add_foreign_keys(absent_paths, 'Path', cursor, 'Path'))
         boards.update(upload_unique_and_add_foreign_keys(absent_boards, 'Board', cursor, 'Board_version'))
         HDV.update(upload_unique_and_add_foreign_keys(absent_HDV, 'HDV', cursor, 'HDV'))
-        software.update(upload_unique_and_add_foreign_keys(absent_software, 'Software', cursor, 'Version'))
-        conn.commit()    
+        software.update(upload_unique_and_add_foreign_keys(absent_software, 'Software', cursor, 'Version')) 
     except Exception as err:
         conn.rollback()
         print(f'Chyba 119: Pri aktualizacií parametrov databázy nastala chyba. \n Psycopg2: {err}\n Návrat do menu.')
@@ -333,17 +362,24 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
 
 
 def recover_files() -> None:
-        stats_path = abspath(join(dirname(__file__), '../temp/stats.pickle'))
-        record_path = abspath(join(dirname(__file__), '../temp/LPTB.pickle'))
+        stats_path = join(CWD, '/temp/stats.pickle')
+        record_path = join(CWD, '/temp/LPTB.pickle')
 
-        if not os.path.isfile(stats_path) or not os.path.isfile(record_path):
+        if not path.isfile(stats_path) or not path.isfile(record_path):
             print(f'Chyba 121: Záloha neexistuje. Hľadaná cesta: {stats_path} a {record_path}.\nUkončujem program')
             return None
 
         try:
+
+            if not verify_file_OK(stats_path, 'štatistiky spracovania', 'rb'):
+                Exception
+
             with open(stats_path, 'rb') as file:
                 stats = pickle.load(file)
 
+
+            if not verify_file_OK(record_path, 'obsahu spracovania', 'rb'):
+                Exception
             with open(record_path, 'rb') as file:
                 records = pickle.load(file)
         except:

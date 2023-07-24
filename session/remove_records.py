@@ -9,24 +9,39 @@ from session.session import create_session
 
 
 
-def remove_database_record(affected_table: str, date_of_removal: str, conn,cursor) -> int:
-    primary_query = sql.SQL('DELETE FROM {affected_table}\
+def remove_database_record(affected_table: str,record_type:str, date_of_removal: str, conn,cursor) -> int:
+    query = sql.SQL('DELETE FROM {affected_table}\
     WHERE \"Path_ID\" IN(\
         SELECT \"ID\" FROM \"Path\" WHERE \"Path\" LIKE {date_of_removal}) RETURNING \"ID\";\
     ').format(affected_table = sql.Identifier(affected_table), date_of_removal=sql.Literal(f'{date_of_removal}%'))
     
-    secondary_query = sql.SQL('DELETE FROM \"Path\" WHERE \"Path\" LIKE {date_of_removal});\
-    ').format(date_of_removal=sql.Literal(f'{date_of_removal}%'))
+
     
+    #Remove from primary table
     try:
-        cursor.execute(primary_query)
+        cursor.execute(query)
         deleted_records = len(cursor.fetchall())
-        cursor.execute(secondary_query)
-        return deleted_records
-    except:
+    except Exception as err:
+        print(f'Chyba 128: V procese odstraňovania záznamov z vybranej tabuľky (Configuration alebo Program) došlo ku chybe. psycopg2: {err}\nNávrat do menu.')
         conn.rollback()
         conn.close()
         return None
+    
+
+    #Remove from path, so there isn't a conflict when uploading new records
+    query = sql.SQL('DELETE FROM \"Path\" WHERE \"Path\" LIKE {date_of_removal}\
+    ').format(date_of_removal=sql.Literal(f'{date_of_removal}%{record_type}%'))
+
+    try:
+        cursor.execute(query)
+    except Exception as err:
+        print(f'Chyba 129: V procese odstraňovania záznamov z tabuľky cudzích kľúčov došlo ku chybe psycopg2: {err}\nNávrat do menu.')
+        conn.rollback()
+        conn.close()
+        return None
+    
+
+    return deleted_records
 
 
 
@@ -46,33 +61,32 @@ def select_number_of_record_for_deletion(affected_table:str, date_of_removal:str
         print('Chyba 123: Nepodarilo sa verifikovať počet záznamov. Ukončujem aplikáciu.')
         conn.close()
         return None
-        
 
 
 
-def get_table_name_for_deletion() -> str:
+
+def get_table_name_for_deletion() -> tuple:
     match input('Ak chcete odstrániť konfiguračné záznamy KAM, zadajte KAM. Ak chcete odstrániť záznamy programového vybavenia PAP, zadajte PAP: ').lower():
         case 'kam':
-            return 'Configuration'
+            return 'Configuration', 'kam'
         case 'pap':
-            return 'Program'
+            return 'Program', 'pap'
         case _:
             print('Nesprávny vstup, zadajte ho znova.')
-            get_table_name_for_deletion()
+            return get_table_name_for_deletion()
 
 
 def user_initiated_record_removal():
     cursor, conn = create_session(SU=True)
-    conn.autocommit = False
-    print('Chystáte sa odstrániť používateľské záznamy, chcete pokračovať? (Y/N)')
+    print('Chystáte sa odstrániť záznamy MAP, chcete pokračovať? (Y/N)')
     user_input = getch().lower()
     if user_input != b'y':
-        return None
+        return None     
 
     date_of_removal = input('Zadajte rok a mesiac v ktorom chcete odstrániť záznamy. Napr. 2020/01 alebo 2025 alebo 2015/12: ')
 
     #Get table name
-    affected_table = get_table_name_for_deletion()
+    affected_table, record_type = get_table_name_for_deletion()
 
     #Get number of records for deletion
     found_record_for_deletion = select_number_of_record_for_deletion(affected_table, date_of_removal, conn, cursor)
@@ -90,7 +104,7 @@ def user_initiated_record_removal():
         conn.close()
         return None
 
-    deleted_records = remove_database_record(affected_table, date_of_removal, conn, cursor)
+    deleted_records = remove_database_record(affected_table, record_type, date_of_removal, conn, cursor)
     if deleted_records is None:
         return None
 
@@ -103,5 +117,4 @@ def user_initiated_record_removal():
     except:
         pass
 
-    conn.rollback()
     conn.close()

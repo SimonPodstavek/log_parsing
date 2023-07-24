@@ -5,6 +5,7 @@ from os.path import abspath, dirname, join, isfile, isdir, relpath ,exists
 from datetime import datetime, date
 import datetime
 import csv
+import time
 
 from pprint import pprint
 import pickle
@@ -14,6 +15,8 @@ from classes.safebytes_coordinates import *
 from utils.handle_error import *
 from session.upload_records import recover_files
 from session.remove_records import user_initiated_record_removal
+
+print(__file__)
 
 failures = {
     'PAP_timestamp': 0,
@@ -61,12 +64,29 @@ regex_expressions = {
     'any' : re.compile(r'')
 }
 
-# Load all regex
-with open('regex_constructor/regex_expressions.pickle', 'rb') as file:
-    regex_expressions = pickle.load(file)
-    for key in regex_expressions.keys():
-        regex_expressions[key] = re.compile(regex_expressions[key])
 
+
+CWD = dirname(__file__)
+
+
+if not exists(join(CWD,'regex_constructor/regex_expressions.pickle')):
+    print('Chyba 100: Zdrojový súbor REGEX výrazov nebolo možné nájsť.\nUkončujem aplikáciu.')
+    time.sleep(5)
+    exit()
+
+if not access(join(CWD,'regex_constructor/regex_expressions.pickle'), R_OK):
+    print('Chyba 101: Na čítanie zdrojového súboru REGEX nemáte dostatčné oprávnenia.\nUkončujem aplikáciu.')
+    time.sleep(5)
+    exit()
+
+try:
+    # Load all regex
+    with open(path.join(dirname(__file__),'regex_constructor/regex_expressions.pickle'), 'rb') as file:
+        regex_expressions = pickle.load(file)
+        for key in regex_expressions.keys():
+            regex_expressions[key] = re.compile(regex_expressions[key])
+except Exception as err:
+    print('Chyba 130: Pri otváraní a spracovaní zdrojového súboru REGEX nastala chyba.\nUkončujem aplikáciu.')
 
 def write_inconsistent_record_to_csv(inconsistency:str, parameter_safebyes:str, parameter_regex:str, path:str, timestamp:str) -> None:
     first_line = True
@@ -83,11 +103,6 @@ def write_inconsistent_record_to_csv(inconsistency:str, parameter_safebyes:str, 
         print('Chyba 122: Pri zapisovaní nekonzistentného záznamu nastala chyba')
 
     file.close()
-
-
-
-
-
 
 
 def collect_records_from_files(list_of_files:dict)->tuple:
@@ -452,16 +467,6 @@ def create_pap_record_object(record:list, path:str)->None or list:
 
 
     return None
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -958,11 +963,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
 
 
 
-
-
-
 def main():
-
     starting_path = ''
     minimal_date =  None
     def select_software_mode():
@@ -1060,3 +1061,5 @@ def primary_mediator(starting_path:str, minimal_date:datetime) -> None:
 
 if __name__ == '__main__':
     main()
+    input()
+
