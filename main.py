@@ -1,6 +1,6 @@
 import re
 import sys
-from os import path, access, R_OK, listdir, walk
+from os import path, access, R_OK, listdir, walk, getcwd
 from os.path import abspath, dirname, join, isfile, isdir, relpath ,exists
 from datetime import datetime, date
 import datetime
@@ -66,7 +66,8 @@ regex_expressions = {
 
 
 
-CWD = dirname(__file__)
+CWD = getcwd()
+
 
 
 if not exists(join(CWD,'regex_constructor/regex_expressions.pickle')):
@@ -81,7 +82,7 @@ if not access(join(CWD,'regex_constructor/regex_expressions.pickle'), R_OK):
 
 try:
     # Load all regex
-    with open(path.join(dirname(__file__),'regex_constructor/regex_expressions.pickle'), 'rb') as file:
+    with open(path.join(CWD,'regex_constructor/regex_expressions.pickle'), 'rb') as file:
         regex_expressions = pickle.load(file)
         for key in regex_expressions.keys():
             regex_expressions[key] = re.compile(regex_expressions[key])
@@ -89,18 +90,21 @@ except Exception as err:
     print('Chyba 130: Pri otváraní a spracovaní zdrojového súboru REGEX nastala chyba.\nUkončujem aplikáciu.')
 
 def write_inconsistent_record_to_csv(inconsistency:str, parameter_safebyes:str, parameter_regex:str, path:str, timestamp:str) -> None:
+    
+    
     first_line = True
-    if isfile('../Nekonzistentne zaznamy.csv'):
+    if isfile(join(CWD, '../výstup/Nekonzistentne zaznamy.csv')):
         first_line = False
 
+
     try:
-        with open('../Nekonzistentne zaznamy.csv', 'a', newline='' ) as file:
+        with open(join(CWD, '../výstup/Nekonzistentne zaznamy.csv'), 'a+', newline='' ) as file:
             writer = csv.writer(file)
             if first_line:
                 writer.writerow(['Nekonzistentná položka', 'Verzia safebytes', 'Verzia regex', 'Cesta', 'Časová známka']) 
             writer.writerow([inconsistency, parameter_safebyes, parameter_regex, path, timestamp])
-    except:
-        print('Chyba 122: Pri zapisovaní nekonzistentného záznamu nastala chyba')
+    except Exception as err:
+        print(f'Chyba 122: Pri zapisovaní nekonzistentného záznamu nastala chyba: {err}')
 
     file.close()
 
@@ -1021,7 +1025,7 @@ def primary_mediator(starting_path:str, minimal_date:datetime) -> None:
 
 
     if len(paths) == 0:
-        print("Chyba 102: V adresári {} sa nenachádzajú žiadne súbory, alebo sú staršie ako {}.\nUkončujem program".format(starting_path, datetime.strftime(minimal_date, '%d.%m.%Y')))
+        print("Chyba 102: V adresári {} sa nenachádzajú žiadne súbory, alebo sú staršie ako {}.".format(starting_path, datetime.strftime(minimal_date, '%d.%m.%Y')))
         return None
 
     # Divide files into records

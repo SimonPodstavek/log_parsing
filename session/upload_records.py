@@ -4,7 +4,7 @@ import time
 from sys import exit
 import pickle
 from os.path import abspath, dirname, join, exists
-from os import path, access, R_OK, W_OK
+from os import path, access, R_OK, W_OK, getcwd
 import io
 from msvcrt import getch
 
@@ -16,7 +16,7 @@ from session.session import create_session
 import classes
 
 
-CWD = dirname(__file__)
+CWD = getcwd()
 
 failure_notation = {
     'PAP_timestamp': 'Časová známka PAP - REGEX',
@@ -63,7 +63,7 @@ def verify_file_OK(relative_path, file_description, mode):
         if not access(file_path, W_OK):
             print(f'Chyba 101: Na zápis {file_description} nemáte dostatčné oprávnenia. Cesta: {file_path}')
             return False
-
+    return True
 
 
 
@@ -146,17 +146,17 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
         stats = {'total_number_of_records' : total_number_of_records, 'records_with_invalid_expression' : records_with_invalid_expression, 'failures' : failures}
         
         
-        if not verify_file_OK('../temp/stats.pickle', 'štatistiky spracovania', 'wb'):
+        if not verify_file_OK('temp/stats.pickle', 'štatistiky spracovania', 'wb'):
             raise Exception
  
-        with open(join(CWD, '../temp/stats.pickle'), 'wb') as file:
+        with open(join(CWD, 'temp/stats.pickle'), 'wb') as file:
             pickle.dump(stats, file)
 
-        if not verify_file_OK('../temp/stats.pickle', 'obsahu spracovania', 'wb'):
+        if not verify_file_OK('temp/stats.pickle', 'obsahu spracovania', 'wb'):
             raise Exception
-        with open(join(CWD, '../temp/LPTB.pickle'), 'wb') as file:
+        with open(join(CWD, 'temp/LPTB.pickle'), 'wb') as file:
             pickle.dump(records, file)
-            print('Spracované zázamy sú zálohované. Cesta: {}\n'.format(join(CWD, '../temp/')))
+            print('Spracované zázamy sú zálohované. Cesta: {}\n'.format(join(CWD, 'temp/')))
 
     except Exception as err:
         print(f'Chyba 120: Spracované súbory nebolo možné zálohovať. Uistite sa, že má program dostatočné povolenia pre vytváranie súborov.Err_desc:{err}')
@@ -362,11 +362,11 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
 
 
 def recover_files() -> None:
-        stats_path = join(CWD, '/temp/stats.pickle')
-        record_path = join(CWD, '/temp/LPTB.pickle')
+        stats_path = join(CWD, 'temp/stats.pickle')
+        record_path = join(CWD, 'temp/LPTB.pickle')
 
         if not path.isfile(stats_path) or not path.isfile(record_path):
-            print(f'Chyba 121: Záloha neexistuje. Hľadaná cesta: {stats_path} a {record_path}.\nUkončujem program')
+            print(f'Chyba 121: Záloha neexistuje. Hľadaná cesta: {stats_path} a {record_path}.')
             return None
 
         try:
