@@ -69,8 +69,8 @@ def write_inconsistent_record_to_csv(inconsistency:str, parameter_safebyes:str, 
         with open(join(CWD, '../výstup/Nekonzistentne zaznamy.csv'), 'a+', newline='' ) as file:
             writer = csv.writer(file)
             if first_line:
-                writer.writerow(['Časová známka', 'Nekonzistentná položka', 'Verzia safebytes', 'Verzia regex', 'Cesta']) 
-            writer.writerow([datetime.now().strftime(r'%Y-%m-%d %H:%M:%S'),inconsistency, parameter_safebyes, parameter_regex, path, timestamp])
+                writer.writerow(['Časová známka spracovania', 'Nekonzistentná položka', 'Verzia safebytes', 'Verzia regex', 'Cesta']) 
+            writer.writerow([datetime.now().strftime('%Y-%m-%d %H:%M:%S'),inconsistency, parameter_safebyes, parameter_regex, path, timestamp])
     except Exception as err:
         print(f'Chyba 122: Pri zapisovaní nekonzistentného záznamu nastala chyba: {err}')
 
