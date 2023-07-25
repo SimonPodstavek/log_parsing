@@ -311,7 +311,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
 
     if parameter_found == False or safebytes == ['']:
         
-        response = error_handler(record_object, 105,"V zadanom zázname neexistujú safebytes. Zadajte safebytes",True, "N/A",re.compile(r'(?:[0-9A-F]{2} *)*'))
+        response = error_handler(record_object, 105,"V zadanom zázname neexistujú safebytes. Zadajte safebytes",True, "N/A",re.compile(r'^(?:[0-9A-F]{2} {0,1})*$'))
         if response == None:
             failed_records.append(('PAP_safebytes', record_object))
             return None
@@ -415,33 +415,55 @@ def create_pap_record_object(record:list, path:str)->None or list:
         pass
 
     #Get actor ID from safebytes
-    actor = safebytes[safebyte_locations[generation][version].get_actor()]
-    actor = actor[::-1]
-    actor = ''.join(actor)
-    record_object.set_actor(int(actor,16))
-    
+    try:
+        actor = safebytes[safebyte_locations[generation][version].get_actor()]
+        actor = actor[::-1]
+        actor = ''.join(actor)
+        record_object.set_actor(int(actor,16))
+    except Exception:
+        failed_records.append(('PAP_safebytes_actor', record_object))
+        return None
+
+
+
     #Get board from safebytes
-    board = safebytes[safebyte_locations[generation][version].get_board()]
-    board = board[::-1]
-    board = str(int(''.join(board),16))
-    if len(board) < 7:
-        board = ''.join(('V', board.zfill(6)))
-    record_object.set_board(board)
+    try:
+        board = safebytes[safebyte_locations[generation][version].get_board()]
+        board = board[::-1]
+        board = str(int(''.join(board),16))
+        if len(board) < 7:
+            board = ''.join(('V', board.zfill(6)))
+        record_object.set_board(board)
+    except Exception:
+        failed_records.append(('PAP_safebytes_board', record_object))
+        return None
+
 
     #Get Checksum Flash from safebytes
-    checksum_Flash = safebytes[safebyte_locations[generation][version].get_checksum_Flash()]
-    checksum_Flash = ''.join(checksum_Flash)
-    checksum_Flash = 'x'.join(['0',checksum_Flash])
-    record_object.set_checksum_Flash(checksum_Flash)
+    try:
+        checksum_Flash = safebytes[safebyte_locations[generation][version].get_checksum_Flash()]
+        checksum_Flash = ''.join(checksum_Flash)
+        checksum_Flash = 'x'.join(['0',checksum_Flash])
+        record_object.set_checksum_Flash(checksum_Flash)
+    except Exception:
+        failed_records.append(('PAP_safebytes_CHSUM_Flash', record_object))
+        return None
+
+
 
     #Get Checksum EEPROM from safebytes
-    checksum_EEPROM = safebytes[safebyte_locations[generation][version].get_checksum_EEPROM()]
-    checksum_EEPROM = ''.join(checksum_EEPROM)
-    checksum_EEPROM = 'x'.join(['0',checksum_EEPROM])
-    record_object.set_checksum_EEPROM(checksum_EEPROM)
+    try:
+        checksum_EEPROM = safebytes[safebyte_locations[generation][version].get_checksum_EEPROM()]
+        checksum_EEPROM = ''.join(checksum_EEPROM)
+        checksum_EEPROM = 'x'.join(['0',checksum_EEPROM])
+        record_object.set_checksum_EEPROM(checksum_EEPROM)
+    except Exception:
+        failed_records.append(('PAP_safebytes_CHSUM_EEPROM', record_object))
+        return None
 
 
-    # If there hasn't been an error in finding all compulsory parameters, append record_object to satisfying_records
+
+    # If there hasn't been an exception in finding all compulsory parameters, append record_object to satisfying_records
     satisfying_records.append(record_object)
 
 

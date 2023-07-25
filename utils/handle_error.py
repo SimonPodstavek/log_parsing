@@ -33,13 +33,13 @@ def error_handler(record_object:list, error_number:int, error_message:str, requi
                 print("\n"+record_object.get_content()+"\n"+selection_menu)
             case b'i':
                 while True:
-                    user_corrected_value=input("Pre navrat do menu \"RETURNME\". Zadajte prosím opravenú hodnotu: ")
-                    if re.search(requirement,user_corrected_value) is not None:
-                        print("Zmena bola akceptovaná. \n \n \n")
-                        return user_corrected_value
-                    elif user_corrected_value.lower() == "returnme":
+                    user_corrected_value = input("Pre navrat do menu \"RETURNME\". Zadajte prosím opravenú hodnotu: ")
+                    if user_corrected_value.lower() == "returnme":
                         print(selection_menu)
                         break
+                    elif re.search(requirement,user_corrected_value) is not None:
+                        print("Zmena bola akceptovaná. \n \n \n")
+                        return user_corrected_value
                     else:
                         print("Zadaná hodnota nevyhovuje požiadavkám, skúste to prosím znovu. Požiadavka: {}\n ".format(requirement.pattern))
             case b'\r':
