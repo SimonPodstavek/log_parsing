@@ -3,10 +3,12 @@ from time import strftime, perf_counter
 import time
 from sys import exit
 import pickle
-from os.path import abspath, dirname, join, exists
+from os.path import abspath, dirname, join, exists, isfile
 from os import path, access, R_OK, W_OK, getcwd
 import io
 from msvcrt import getch
+from collections import Counter
+import csv
 
 
 from psycopg2 import sql
@@ -14,6 +16,9 @@ import psycopg2
 
 from session.session import create_session
 import classes
+from classes.log_classes import *
+from classes.safebytes_coordinates import *
+
 
 
 CWD = getcwd()
@@ -45,7 +50,6 @@ failure_notation = {
     'KAM_configured_device_C': 'KAM kanál C Konfigurované zariadenie',
     'noname_SW': 'KAM Softvér je nastavený ako \'noname\''
 }
-
 
 # Check if file exists, is accessible and can be opened
 def verify_file_OK(relative_path, file_description, mode):
@@ -130,8 +134,36 @@ def fetch_database_data(paths, previous_database_paths, boards, HDV, software, c
 
 
 
+
+
+def write_failed_records_to_csv(failed_records) -> None:
+    first_line = True
+    if isfile(join(CWD, '../výstup/Nespracované záznamy.csv')):
+        first_line = False
+
+    try:
+        with open(join(CWD, '../výstup/Nespracované záznamy.csv'), 'a+', newline='' ) as file:
+            writer = csv.writer(file)
+            if first_line:
+                writer.writerow(['Časová známka spracovania', 'Chybný parameter', 'Cesta súboru', 'Obsah záznamu'])
+            for failed_record in failed_records:
+                writer.writerow([datetime.now().strftime('%Y-%m-%d %H:%M:%S'), failed_record[0], failed_record[1].get_path(), failed_record[1].get_content()])
+        file.close()
+    except Exception as err:
+        print(f'Chyba 132: Pri zapisovaní nespracovaných záznamov do CSV súboru nastala chyba. {err}')
+
+
+
+
+
+
+
+
+
+
+
 parsing_start_time = time.perf_counter()
-def upload_records(records:list, total_number_of_records:int, records_with_invalid_expression:int, failures: dict) -> None:
+def upload_records(records:list, total_number_of_records:int, records_with_invalid_expression:int, failed_records: list) -> None:
     #check if there are any records to be uploaded
     number_of_satisfying_records = len(records)
     if number_of_satisfying_records == 0: 
@@ -143,7 +175,7 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
 
 
     try:
-        stats = {'total_number_of_records' : total_number_of_records, 'records_with_invalid_expression' : records_with_invalid_expression, 'failures' : failures}
+        stats = {'total_number_of_records' : total_number_of_records, 'records_with_invalid_expression' : records_with_invalid_expression, 'failures' : failed_records}
         
         
         if not verify_file_OK('temp/stats.pickle', 'štatistiky spracovania', 'wb'):
@@ -170,14 +202,14 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
     print('Nespracované záznamy: {} z toho platných: {}'.format(total_number_of_records-number_of_satisfying_records, total_number_of_records-number_of_satisfying_records-records_with_invalid_expression))
     print('Úspešnosť spracovania platných záznamov: {}%:'.format(100*number_of_satisfying_records/(total_number_of_records-records_with_invalid_expression)))
 
-    print('Chcete vypísať štatistiku spracovania (Y/N)')
-    if getch().lower() == b'y':
-        failed_total = sum(failures[x] for x in failures)
-        failures = sorted(failures.items(),key = lambda item: item[1]  ,  reverse=True)
-        for failure in failures:
-            if failure[1] == 0:
-                continue
-            print(f'{failure_notation[failure[0]]} : {failure[1]} : {round(100*failure[1]/failed_total,2)}% zo zlyhaných')
+    
+    write_failed_records_to_csv(failed_records)
+
+    if input('Chcete vypísať štatistiku spracovania (Y/N)') == 'y':
+        failed_total = len(failed_records)
+        failures = Counter([x[0] for x in failed_records])
+        for failure in failures.items():
+            print(f'{failure_notation[failure[0]]}: ({failure[1]}): {round(100*failure[1]/failed_total,2)}% zo zlyhaných')
 
 
     print('-'*80)
@@ -198,7 +230,6 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
         return None
     else:
         paths, previous_database_paths, boards, HDV, software = temp
-
     
     print('Sťahovanie parametrov z databázy: úspech')
     print('-'*80)
@@ -297,7 +328,8 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
             record['config_datetime'] = record_object.get_config_datetime().strftime(r'%Y-%m-%d %H:%M:%S') 
             record['Processed_datetime'] = datetime.now().strftime(r'%Y-%m-%d %H:%M:%S') 
             record['M_programmed_date'] = record_object.get_M_programmed_date().strftime(r'%Y-%m-%d') 
-            # record['M_config_actor'] = actors[record_object.get_M_programmed_actor()]
+            record['M_programmed_actor'] = record_object.get_M_programmed_actor()
+            record['M_config_actor'] = record_object.get_M_actor()
             record['M_software_ID'] = software[record_object.get_M_programmed_software()]
             record['M_board_ID'] = boards[record_object.get_M_programmed_board()]
             record['M_functonality'] = record_object.get_M_functionality()
@@ -310,7 +342,8 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
                 record['C_configured_device'] = record_object.get_C_configured_device()
                 record['C_programmed_date'] = record_object.get_C_programmed_date().strftime(r'%Y-%m-%d') 
                 record['Processed_datetime'] = datetime.now().strftime(r'%Y-%m-%d %H:%M:%S') 
-                # record['C_config_actor'] = actors[record_object.get_C_programmed_actor()]
+                record['C_programmed_actor'] = record_object.get_C_programmed_actor()
+                record['C_config_actor'] = record_object.get_C_actor()
                 record['C_software_ID'] = software[record_object.get_C_programmed_software()]
                 record['C_board_ID'] = boards[record_object.get_C_programmed_board()]
                 record['C_functonality'] = record_object.get_C_functionality()
@@ -318,10 +351,10 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
                 record['C_IRC'] = record_object.get_C_IRC()
                 record['C_spare_part'] = record_object.get_C_spare_part()
             else:
-                record['C_programmed_date'], record['C_software_ID'], record['C_board_ID'], record['C_functonality'], record['C_configuation'], record['C_configured_device'], record['C_IRC'], record['C_spare_part'] = None, None, None, None, None, None, 0, 0
+                record['C_programmed_date'], record['C_software_ID'], record['C_board_ID'], record['C_functonality'], record['C_configuation'], record['C_programmed_actor'], record['C_config_actor'],record['C_configured_device'], record['C_IRC'], record['C_spare_part'] = None, None,None, None, None, None, None, None, 0, 0
             
-            upload_KAM_string = ''.join([upload_KAM_string, f"{record['HDV']}~{record['config_datetime']}~{record['M_programmed_date']}~{record['M_software_ID']}~{record['M_board_ID']}~{record['M_functonality']}~{record['M_configuation']}\
-                ~{record['M_IRC']}~{record['M_spare_part']}~{record['C_programmed_date']}~{record['C_software_ID']}~{record['C_board_ID']}~{record['C_functonality']}~{record['C_configuation']}~{record['C_IRC']}\
+            upload_KAM_string = ''.join([upload_KAM_string, f"{record['HDV']}~{record['config_datetime']}~{record['M_programmed_date']}~{record['M_programmed_actor']}~{record['M_config_actor']}~{record['M_software_ID']}~{record['M_board_ID']}~{record['M_functonality']}~{record['M_configuation']}\
+                ~{record['M_IRC']}~{record['M_spare_part']}~{record['C_programmed_date']}~{record['C_programmed_actor']}~{record['C_config_actor']}~{record['C_software_ID']}~{record['C_board_ID']}~{record['C_functonality']}~{record['C_configuation']}~{record['C_IRC']}\
                 ~{record['C_spare_part']}~True~{record['Path']}~{record['Processed_datetime']}~{record['M_configured_device']}~{record['C_configured_device']}", '\n'])
 
 
@@ -339,7 +372,7 @@ def upload_records(records:list, total_number_of_records:int, records_with_inval
 
     try:
         cursor.copy_from(upload_PAP_file, 'Program', sep='~', null='None', columns=('HDV_ID', 'PAP_datetime', 'Compilation_date', 'Actor_SharePointID', 'Board_ID', 'Checksum_Flash', 'Checksum_EEPROM', 'Software_ID', 'Active', 'Path_ID', 'Processed_datetime'))
-        cursor.copy_from(upload_KAM_file, 'Configuration', sep='~', null='None', columns=('HDV_ID', 'Config_datetime', 'M_programmed_date', 'M_software_ID', 'M_board_ID', 'M_functionality', 'M_configuration', 'M_IRC', 'M_spare_part','C_programmed_date', 'C_software_ID', 'C_board_ID', 'C_functionality', 'C_configuration', 'C_IRC', 'C_spare_part', 'Active', 'Path_ID', 'Processed_datetime','M_configured_device','C_configured_device'))
+        cursor.copy_from(upload_KAM_file, 'Configuration', sep='~', null='None', columns=('HDV_ID', 'Config_datetime', 'M_programmed_date', 'M_programmed_actor', 'M_config_actor', 'M_software_ID', 'M_board_ID', 'M_functionality', 'M_configuration', 'M_IRC', 'M_spare_part', 'C_programmed_date', 'C_programmed_actor', 'C_config_actor', 'C_software_ID', 'C_board_ID', 'C_functionality', 'C_configuration', 'C_IRC', 'C_spare_part', 'Active', 'Path_ID', 'Processed_datetime','M_configured_device','C_configured_device'))
         conn.commit()
     except Exception as err:
         conn.rollback()
@@ -370,7 +403,6 @@ def recover_files() -> None:
             return None
 
         try:
-
             if not verify_file_OK(stats_path, 'štatistiky spracovania', 'rb'):
                 Exception
 
