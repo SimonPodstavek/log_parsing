@@ -22,7 +22,7 @@ regex_expressions = {
 
 
 def error_handler(record_object:list, error_number:int, error_message:str, required:bool,queried_string:str="N/A", requirement:str=regex_expressions['any']) -> 0 or str:
-    selection_menu="--------------------------------------------------------------------------------\n Vyberte si z nasledujúcich príkazov: \n Print záznamu -> P \n Zadanie hodnoty -> I \n Preskočiť záznam -> ENTER \n Vynechať hodnotu v zázname -> E \n  Ukončiť spracovanie a uložiť záznamy -> ESC \n -------------------------------------------------------------------------------- \n"
+    selection_menu="--------------------------------------------------------------------------------\nVyberte si z nasledujúcich príkazov: \n Print záznamu -> P \nZadanie hodnoty -> I \nPreskočiť záznam -> ENTER \nVynechať hodnotu v zázname -> E \nUkončiť spracovanie a uložiť záznamy -> ESC \n -------------------------------------------------------------------------------- \n"
     print("Pri spracovaní záznamu vznikla chyba: {error_number}. \nPopis chyby: {error_message} \nProblematický reťazec: {queried_string} \n".format(queried_string=queried_string, error_message=error_message,error_number=error_number))
     print(selection_menu)
     while True:
@@ -30,7 +30,7 @@ def error_handler(record_object:list, error_number:int, error_message:str, requi
         key_pressed.lower()
         match key_pressed:
             case b'p':
-                print("\n"+record_object.get_content()+"\n"+selection_menu)
+                print('\n'.join([f'Cesta súboru: {record_object.get_path()}',record_object.get_content(),selection_menu]))
             case b'i':
                 while True:
                     user_corrected_value = input("Pre navrat do menu \"RETURNME\". Zadajte prosím opravenú hodnotu: ")
