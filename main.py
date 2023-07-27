@@ -172,11 +172,16 @@ def collect_records_from_files(list_of_files:dict)->tuple:
             continue
 
         #Remove double new lines and empty records
-        records_list=[re.sub(regex_expressions['double_new_line_remove'], '\n', x).strip() for x in records_list]
+        records_list = [re.sub(regex_expressions['double_new_line_remove'], '\n', x).strip() for x in records_list]
+        
         #Remove empty records
-        records_list=list(filter(bool,records_list))
+        records_list = list(filter(bool,records_list))
+
         #Remove records that are shorter than 151 characters
-        records_list = [x for x in records_list if len(x.strip()) > 150] 
+        #Add new line at the end of each record. This ensures, that all of the REGEX work correctly,
+        #even for last line parameters
+
+        records_list = [''.join([x,'\n']) for x in records_list if len(x.strip()) > 150] 
         
         path = '/'.join(path.split('\\')[-3:])
 
@@ -197,7 +202,7 @@ def create_pap_record_object(record:list, path:str)->None or list:
 
 
 
-
+    
     #Find timestamp programmed
     parameter_found = False
     try:
@@ -475,10 +480,15 @@ def create_pap_record_object(record:list, path:str)->None or list:
 
 def create_kam_record_object(record:list, path:str)->None or list:
 
+
+
+
     #Create new empty instance of record class
     record_object = KAMRecordBuilder()
     record_object.set_content(record)
     record_object.set_path(path.path)
+
+
 
     multichannel = False
 
@@ -827,7 +837,7 @@ def create_kam_record_object(record:list, path:str)->None or list:
 
     #Find KAM spare part 
     M_response = False
-    C_response = None
+    C_response = False
     parameter_found = False
     try:
         response = re.findall(regex_expressions['KAM_spare_part'],record)
@@ -841,8 +851,8 @@ def create_kam_record_object(record:list, path:str)->None or list:
         translations_of_word_yes = ['áno', 'ano', 'yes', 'ja'] 
         translations_of_word_no = ['nie', 'no', 'nein'] 
 
-        if M_response is None:
-            pass
+        if M_response.strip() is None or M_response.strip() == '':
+            M_response = False
         elif M_response in translations_of_word_yes:
             M_response = True
         elif M_response in translations_of_word_no:
@@ -850,14 +860,17 @@ def create_kam_record_object(record:list, path:str)->None or list:
         else:
             print("Nemožno zvalidovať náhradnú časť pre kanál M. Záznam je preskočený")
             
-        if C_response is None:
-            pass
+        if C_response.strip() is None or C_response.strip() == '':
+            C_response = False
         elif C_response in translations_of_word_yes:
             C_response = True
         elif C_response in translations_of_word_no:
             C_response = False
 
     except:
+        pass
+
+    if not isinstance(M_response, bool):
         pass
 
     record_object.set_M_spare_part(M_response)
